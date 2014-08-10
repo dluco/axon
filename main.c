@@ -1,0 +1,59 @@
+#include <gtk/gtk.h>
+#include <vte/vte.h>
+
+#include "callback.h"
+#include "config.h"
+
+int main(int argc, char *argv[])
+{
+	GtkWidget *window;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *terminal;
+	GtkWidget *scrollbar;
+	char *command[] = {"/bin/bash", NULL,};
+
+	/* initialize gtk+ */
+	gtk_init(&argc, &argv);
+
+	/* initialize ui elements */
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	vbox = gtk_vbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(FALSE, 0);
+	terminal = vte_terminal_new();
+	scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(terminal)));
+//	terminal = VTE_TERMINAL(terminal);
+
+	/* setup */
+	gtk_window_set_default_icon_name("terminal");
+	
+	vte_terminal_set_size(VTE_TERMINAL(terminal), 80, 24);
+	vte_terminal_set_scrollback_lines(VTE_TERMINAL(terminal), scrollback_lines);
+	vte_terminal_set_scroll_on_output(VTE_TERMINAL(terminal), scroll_on_output);
+	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(terminal), scroll_on_keystroke);
+	vte_terminal_fork_command_full(VTE_TERMINAL(terminal), VTE_PTY_DEFAULT, NULL, command, NULL, G_SPAWN_DEFAULT, NULL, NULL, NULL, NULL);
+
+	/* arranging */
+	gtk_box_pack_start(GTK_BOX(hbox), terminal, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), scrollbar, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+	gtk_container_add(GTK_CONTAINER(window), vbox);
+	
+	/* signal setup */
+	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(quit), NULL);
+	g_signal_connect(G_OBJECT(terminal), "child-exited", G_CALLBACK(quit), NULL);
+	g_signal_connect(G_OBJECT(terminal), "window-title-changed", G_CALLBACK(set_title), window);
+	g_signal_connect(G_OBJECT(terminal), "resize-window", G_CALLBACK(resize_window), window);
+
+	/* make elements visible */
+	gtk_widget_show(terminal);
+	(show_scrollbar) ? gtk_widget_show(scrollbar): gtk_widget_hide(scrollbar);
+	gtk_widget_show(hbox);
+	gtk_widget_show(vbox);
+	gtk_widget_show(window);
+
+	/* run gtk main loop */
+	gtk_main();
+
+	return 0;
+}

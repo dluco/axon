@@ -1,0 +1,11 @@
+# Ignore compiled binaries
+myte
+
+# Ignore objects and archives
+*.[oa]
+
+# Ignore log files
+log*
+
+# Ignore example directory
+example
