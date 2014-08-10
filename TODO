@@ -1,1 +1,2 @@
-- automatic resizing (in dwm tiling) does not work
+- can't resize horizontally, only vertically
+	- might have to do with setting number of columns and rows?
