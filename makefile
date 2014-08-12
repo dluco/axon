@@ -1,5 +1,9 @@
+VERSION=0.0
+
+PACKAGE=myte
+
 CC=gcc
-CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags gtk+-2.0 vte)
+CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags gtk+-2.0 vte) -DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\"
 LDFLAGS=-O2 -flto $(shell pkg-config --libs gtk+-2.0 vte)
 
 OBJ=callback.o main.o terminal.o utils.o

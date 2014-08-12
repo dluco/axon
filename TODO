@@ -1,2 +1,5 @@
-- slow startup time - vte is faster
 - popup menu on right-click
+- options parsing:
+	- getopt
+	- argp*
+	- g_options

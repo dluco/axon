@@ -8,10 +8,10 @@
 #include "terminal.h"
 #include "utils.h"
 
-Terminal *terminal_init(void)
+Terminal *terminal_new(void)
 {
 	Terminal *terminal;
-	char *command[] = {"/bin/bash", NULL,};
+	char *command[] = {"/bin/bash", NULL};
 
 	if (!(terminal = malloc(sizeof(*terminal)))) {
 		die("failure to malloc terminal");

@@ -8,6 +8,6 @@ typedef struct terminal {
 	GtkWidget *scrollbar;
 } Terminal;
 
-Terminal *terminal_init(void);
+Terminal *terminal_new(void);
 
 #endif /* TERMINAL_H */
