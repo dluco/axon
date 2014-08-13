@@ -37,7 +37,7 @@ utils.o: utils.c
 	@$(CC) $(CFLAGS) utils.c
 
 clean:
-	rm -rf *.o myte
+	rm -rf *.o myterm
 
 test:
 	@echo ${VERSION}

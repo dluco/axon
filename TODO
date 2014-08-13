@@ -1,3 +1,4 @@
+- config file/library
 - popup menu on right-click
 - options parsing:
 	- getopt

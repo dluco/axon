@@ -5,6 +5,7 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "config.h"
 #include "terminal.h"
 #include "utils.h"
 
@@ -12,12 +13,23 @@ GKeyFile *cfg;
 const char *cfg_group = PACKAGE;
 char *config_file;
 
+int scroll_on_output;;
+int scroll_on_keystroke;
+int show_scrollbar;
+int scrollback_lines;
+
 static void init(void)
 {
 	GError *gerror = NULL;
 	gchar *tmp = NULL;
 	char *config_dir = NULL;
 
+	/* set global variables */
+	scroll_on_output = FALSE;
+	scroll_on_keystroke = TRUE;
+	show_scrollbar = TRUE;
+	scrollback_lines = -1;
+	
 	/* set TERM env-variable? */
 
 	/* Config file initialization */
@@ -51,6 +63,12 @@ static void init(void)
 	}
 	tmp = g_key_file_get_value(cfg, cfg_group, "font", NULL);
 	free(tmp);
+
+	
+	if (!g_key_file_has_key(cfg, cfg_group, "scrollbar", NULL)) {
+		g_key_file_set_boolean(cfg, cfg_group, "scrollbar", TRUE);
+	}
+	show_scrollbar = g_key_file_get_boolean(cfg, cfg_group, "scrollbar", NULL);
 
 	return;
 }

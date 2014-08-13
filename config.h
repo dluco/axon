@@ -1,4 +1,9 @@
-int scroll_on_output = FALSE;
-int scroll_on_keystroke = TRUE;
-int show_scrollbar = TRUE;
-int scrollback_lines = -1;
+#ifndef CONFIG_H
+#define CONFIG_H
+
+extern int scroll_on_output;
+extern int scroll_on_keystroke;
+extern int show_scrollbar;
+extern int scrollback_lines;
+
+#endif /* CONFIG_H */
