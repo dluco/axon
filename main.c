@@ -1,20 +1,66 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
 #include "terminal.h"
+#include "utils.h"
+
+GKeyFile *cfg;
+const char *cfg_group = PACKAGE;
+char *config_file;
 
 static void init(void)
 {
-	/* load config file? */
+	GError *gerror = NULL;
+	gchar *tmp = NULL;
+	char *config_dir = NULL;
+
+	/* set TERM env-variable? */
+
+	/* Config file initialization */
+	cfg = g_key_file_new();
+
+	config_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
+	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
+		/* ~/.config does not exist - create it */
+		g_mkdir(g_get_user_config_dir(), 0755);
+	}
+	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
+		/* program config dir does not exist - create it */
+		g_mkdir(config_dir, 0755);
+	}
+	/* TODO: allow user to specify config file */
+	config_file = g_build_filename(config_dir, PACKAGE "rc", NULL);
+
+	/* Open config file */
+	if (!(g_key_file_load_from_file(cfg, config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror))) {
+		/* if file does not exist, then ignore - one will be created */
+		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
+			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
+			die("invalid config file format\n");
+		}
+	}
+		
+	g_free(config_dir);
+
+	if (!g_key_file_has_key(cfg, cfg_group, "font", NULL)) {
+		g_key_file_set_value(cfg, cfg_group, "font", "Ubuntu Mono,monospace 13");
+	}
+	tmp = g_key_file_get_value(cfg, cfg_group, "font", NULL);
+	free(tmp);
+
 	return;
 }
 
 static void cleanup(void)
 {
-	printf("in cleanup\n");
-	return;
+	/* TODO: move to destroy callback */
+	g_key_file_free(cfg);
+
+	free(config_file);
 }
 
 static void usage(void)

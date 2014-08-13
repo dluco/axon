@@ -1,20 +1,29 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-void destroy_and_quit(VteTerminal *terminal, GtkWidget *window)
+#include "terminal.h"
+
+void destroy(Terminal *term)
 {
-	gtk_widget_destroy(window);
+//	gtk_widget_destroy(term->window);
+	/* TODO: remove for multiple windows */
 	gtk_main_quit();
 }
 
-void delete_event(GtkWidget *window, GdkEvent *event, gpointer terminal)
+gboolean delete_event(GtkWidget *widget, GdkEvent *event, void *data)
 {
-	destroy_and_quit(VTE_TERMINAL(terminal), window);
+	return FALSE;	
 }
 
-void child_exited(GtkWidget *terminal, gpointer *window)
+void destroy_window(GtkWidget *widget, Terminal *term)
 {
-	destroy_and_quit(VTE_TERMINAL(terminal), GTK_WIDGET(window));
+	destroy(term);
+}
+
+void child_exited(GtkWidget *terminal, Terminal *term)
+{
+	/* TODO: perform a waitpid on term's child */
+	destroy(term);
 }
 
 void set_title(GtkWidget *terminal, GtkWidget *window)

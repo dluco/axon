@@ -3,74 +3,78 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "terminal.h"
 #include "callback.h"
 #include "config.h"
-#include "terminal.h"
 #include "utils.h"
 
 Terminal *terminal_new(void)
 {
-	Terminal *terminal;
+	Terminal *term;
 	char *command[] = {"/bin/bash", NULL};
 
-	if (!(terminal = malloc(sizeof(*terminal)))) {
+	if (!(term = malloc(sizeof(*term)))) {
 		die("failure to malloc terminal");
 	}
 
 	/* initialize ui elements */
-	terminal->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	terminal->hbox = gtk_hbox_new(FALSE, 0);
-	terminal->vte = vte_terminal_new();
-	terminal->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(terminal->vte)));
+	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	term->hbox = gtk_hbox_new(FALSE, 0);
+	term->vte = vte_terminal_new();
+	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 
 	/* setup */
-	gtk_window_set_icon_name(GTK_WINDOW(terminal->window), "terminal");
+	gtk_window_set_icon_name(GTK_WINDOW(term->window), "terminal");
 	
 //	vte_terminal_set_size(VTE_TERMINAL(terminal), 80, 24);
-	vte_terminal_set_scrollback_lines(VTE_TERMINAL(terminal->vte), scrollback_lines);
-	vte_terminal_set_scroll_on_output(VTE_TERMINAL(terminal->vte), scroll_on_output);
-	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(terminal->vte), scroll_on_keystroke);
-	vte_terminal_fork_command_full(VTE_TERMINAL(terminal->vte),
+	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), scrollback_lines);
+	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), scroll_on_output);
+	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), scroll_on_keystroke);
+	vte_terminal_fork_command_full(VTE_TERMINAL(term->vte),
 			VTE_PTY_DEFAULT, NULL, command,
 			NULL, G_SPAWN_DEFAULT, NULL,
 			NULL, NULL, NULL);
 
 	/* arranging */
-	gtk_box_pack_start(GTK_BOX(terminal->hbox), terminal->vte, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(terminal->hbox), terminal->scrollbar, FALSE, FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(terminal->window), terminal->hbox);
+	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(term->window), term->hbox);
 	
 	/* signal setup */
-	g_signal_connect(G_OBJECT(terminal->window), "delete-event",
-			G_CALLBACK(delete_event), terminal->vte);
+	g_signal_connect(G_OBJECT(term->window), "delete-event",
+			G_CALLBACK(delete_event), NULL);
+	g_signal_connect(G_OBJECT(term->window), "destroy",
+			G_CALLBACK(destroy_window), term);
 
+	/* *************************************************** */
 	/* Connect to the "char-size" changed signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
-	char_size_changed(GTK_WIDGET(terminal->vte), 0, 0, terminal->window);
-	g_signal_connect(G_OBJECT(terminal->vte), "char-size-changed",
-			G_CALLBACK(char_size_changed), terminal->window);
-	g_signal_connect(G_OBJECT(terminal->vte), "realize",
-			G_CALLBACK(char_size_realized), terminal->window);
+	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
+	g_signal_connect(G_OBJECT(term->vte), "char-size-changed",
+			G_CALLBACK(char_size_changed), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "realize",
+			G_CALLBACK(char_size_realized), term->window);
+	/* *************************************************** */
 
-	g_signal_connect(G_OBJECT(terminal->vte), "child-exited",
-			G_CALLBACK(child_exited), terminal->window);
-	g_signal_connect(G_OBJECT(terminal->vte), "window-title-changed",
-			G_CALLBACK(set_title), terminal->window);
-	g_signal_connect(G_OBJECT(terminal->vte), "refresh-window",
-			G_CALLBACK(refresh_window), terminal->window);
-	g_signal_connect(G_OBJECT(terminal->vte), "resize-window",
-			G_CALLBACK(resize_window), terminal->window);
+	g_signal_connect(G_OBJECT(term->vte), "child-exited",
+			G_CALLBACK(child_exited), term);
+	g_signal_connect(G_OBJECT(term->vte), "window-title-changed",
+			G_CALLBACK(set_title), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "refresh-window",
+			G_CALLBACK(refresh_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "resize-window",
+			G_CALLBACK(resize_window), term->window);
 
-//	gtk_widget_realize(terminal->vte);
-	gtk_window_set_default_size(GTK_WINDOW(terminal->window),
-			vte_terminal_get_column_count(VTE_TERMINAL(terminal->vte)),
-			vte_terminal_get_row_count(VTE_TERMINAL(terminal->vte)));
+//	gtk_widget_realize(term->vte);
+	gtk_window_set_default_size(GTK_WINDOW(term->window),
+			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
+			vte_terminal_get_row_count(VTE_TERMINAL(term->vte)));
 
 	/* make elements visible */
-	gtk_widget_show(terminal->vte);
-	(show_scrollbar) ? gtk_widget_show(terminal->scrollbar) : gtk_widget_hide(terminal->scrollbar);
-	gtk_widget_show(terminal->hbox);
-	gtk_widget_show(terminal->window);
+	gtk_widget_show(term->vte);
+	(show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+	gtk_widget_show(term->hbox);
+	gtk_widget_show(term->window);
 	
-	return terminal;
+	return term;
 }

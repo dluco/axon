@@ -1,21 +1,24 @@
+PACKAGE=myterm
 VERSION=0.0
 
-PACKAGE=myte
+DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\"
+
 
 CC=gcc
-CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags gtk+-2.0 vte) -DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\"
-LDFLAGS=-O2 -flto $(shell pkg-config --libs gtk+-2.0 vte)
+PKGDEPS=gtk+-2.0 vte
+CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
+LDFLAGS=-O2 -flto $(shell pkg-config --libs ${PKGDEPS})
 
 OBJ=callback.o main.o terminal.o utils.o
 
-all: myte
+all: myterm
 
-debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags gtk+-2.0 vte)
+debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 debug: all
 
-myte: $(OBJ)
+myterm: $(OBJ)
 	@echo $(CC) -o myte
-	@$(CC) $(OBJ) $(LDFLAGS) -o myte
+	@$(CC) $(OBJ) $(LDFLAGS) -o myterm
 
 callback.o: callback.c callback.h
 	@echo $(CC) -c callback.c
@@ -35,5 +38,8 @@ utils.o: utils.c
 
 clean:
 	rm -rf *.o myte
+
+test:
+	@echo ${VERSION}
 
 .PHONY: all clean debug
