@@ -9,76 +9,29 @@
 #include "terminal.h"
 #include "utils.h"
 
-GKeyFile *cfg;
-const char *cfg_group = PACKAGE;
-char *config_file;
-
-int scroll_on_output;;
-int scroll_on_keystroke;
-int show_scrollbar;
-int scrollback_lines;
+Config *conf;
 
 static void init(void)
 {
-	GError *gerror = NULL;
-	gchar *tmp = NULL;
-	char *config_dir = NULL;
-
-	/* set global variables */
-	scroll_on_output = FALSE;
-	scroll_on_keystroke = TRUE;
-	show_scrollbar = TRUE;
-	scrollback_lines = -1;
-	
 	/* set TERM env-variable? */
 
-	/* Config file initialization */
-	cfg = g_key_file_new();
-
-	config_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
-	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
-		/* ~/.config does not exist - create it */
-		g_mkdir(g_get_user_config_dir(), 0755);
-	}
-	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
-		/* program config dir does not exist - create it */
-		g_mkdir(config_dir, 0755);
-	}
-	/* TODO: allow user to specify config file */
-	config_file = g_build_filename(config_dir, PACKAGE "rc", NULL);
-
-	/* Open config file */
-	if (!(g_key_file_load_from_file(cfg, config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror))) {
-		/* if file does not exist, then ignore - one will be created */
-		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
-			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
-			die("invalid config file format\n");
-		}
-	}
-		
-	g_free(config_dir);
-
-	if (!g_key_file_has_key(cfg, cfg_group, "font", NULL)) {
-		g_key_file_set_value(cfg, cfg_group, "font", "Ubuntu Mono,monospace 13");
-	}
-	tmp = g_key_file_get_value(cfg, cfg_group, "font", NULL);
-	free(tmp);
-
+	/* create a new Config instance */
+	conf = config_new();
 	
-	if (!g_key_file_has_key(cfg, cfg_group, "scrollbar", NULL)) {
-		g_key_file_set_boolean(cfg, cfg_group, "scrollbar", TRUE);
-	}
-	show_scrollbar = g_key_file_get_boolean(cfg, cfg_group, "scrollbar", NULL);
-
-	return;
+	/* set default values */
+	conf->scroll_on_output = FALSE;
+	conf->scroll_on_keystroke = TRUE;
+	conf->show_scrollbar = TRUE;
+	conf->scrollback_lines = -1;
+	
+	config_load(conf);
 }
 
 static void cleanup(void)
 {
-	/* TODO: move to destroy callback */
-	g_key_file_free(cfg);
+	config_save(conf);
 
-	free(config_file);
+	config_destroy(conf);
 }
 
 static void usage(void)
@@ -90,6 +43,8 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
+	Terminal *term;
+
 	if (argc > 1) {
 		usage();
 		return EXIT_SUCCESS;
@@ -102,7 +57,8 @@ int main(int argc, char *argv[])
 	init();
 
 	/* initialize terminal instance */
-	terminal_new();
+	term = terminal_new();
+	terminal_init(term);
 
 	/* run gtk main loop */
 	gtk_main();

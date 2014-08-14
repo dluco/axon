@@ -9,5 +9,6 @@ typedef struct terminal {
 } Terminal;
 
 Terminal *terminal_new(void);
+void terminal_init(Terminal *);
 
 #endif /* TERMINAL_H */

@@ -3,19 +3,27 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "config.h"
 #include "terminal.h"
 #include "callback.h"
-#include "config.h"
 #include "utils.h"
+
+extern Config *conf;
 
 Terminal *terminal_new(void)
 {
 	Terminal *term;
-	char *command[] = {"/bin/bash", NULL};
 
 	if (!(term = malloc(sizeof(*term)))) {
 		die("failure to malloc terminal");
 	}
+
+	return term;
+}
+
+void terminal_init(Terminal *term)
+{
+	char *command[] = {"/bin/bash", NULL};
 
 	/* initialize ui elements */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -27,9 +35,9 @@ Terminal *terminal_new(void)
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "terminal");
 	
 //	vte_terminal_set_size(VTE_TERMINAL(terminal), 80, 24);
-	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), scrollback_lines);
-	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), scroll_on_output);
-	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), scroll_on_keystroke);
+	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
+	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
+	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	vte_terminal_fork_command_full(VTE_TERMINAL(term->vte),
 			VTE_PTY_DEFAULT, NULL, command,
 			NULL, G_SPAWN_DEFAULT, NULL,
@@ -72,9 +80,7 @@ Terminal *terminal_new(void)
 
 	/* make elements visible */
 	gtk_widget_show(term->vte);
-	(show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 	gtk_widget_show(term->hbox);
 	gtk_widget_show(term->window);
-	
-	return term;
 }

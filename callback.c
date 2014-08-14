@@ -3,14 +3,42 @@
 
 #include "terminal.h"
 
+#define WRITE_OUT FALSE
+
 void destroy(Terminal *term)
 {
+	const char *output_file;
+	GFile *file;
+	GOutputStream *stream;
+	GError *gerror = NULL;
+
+	output_file = "out.txt";
+	
+	if (output_file && WRITE_OUT) {
+		file = g_file_new_for_commandline_arg (output_file);
+		stream = G_OUTPUT_STREAM (g_file_replace (file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
+
+		if (stream) {
+			vte_terminal_write_contents (VTE_TERMINAL(term->vte), stream,
+						     VTE_TERMINAL_WRITE_DEFAULT,
+						     NULL, &gerror);
+			g_object_unref (stream);
+		}
+
+		if (gerror) {
+			fprintf(stderr, "%s\n", gerror->message);
+			g_error_free (gerror);
+		}
+
+		g_object_unref (file);
+	}
+
 //	gtk_widget_destroy(term->window);
 	/* TODO: remove for multiple windows */
 	gtk_main_quit();
 }
 
-gboolean delete_event(GtkWidget *widget, GdkEvent *event, void *data)
+gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	return FALSE;	
 }
