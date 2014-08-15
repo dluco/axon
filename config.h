@@ -16,7 +16,7 @@ typedef struct config {
 	gboolean scroll_on_output;
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;
-	gboolean scrollback_lines;
+	int scrollback_lines;
 	gboolean modified;
 } Config;
 

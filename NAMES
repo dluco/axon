@@ -1,5 +1,7 @@
 # MAIN
 arct - "a really cool terminal"
+axon
+dendrite
 
 # *TERM
 lucoterm
@@ -8,6 +10,8 @@ nandterm - "N and D terminal"
 
 # MISC
 chicken
+vera
+arcturus
 
 # SKY*
 sky
@@ -20,3 +24,4 @@ gryphon
 goblin
 vanguard
 demon
+ghost

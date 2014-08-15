@@ -87,31 +87,15 @@ void config_load(Config *conf)
 void config_save(Config *conf)
 {
 	GError *gerror = NULL;
-	gsize len = 0;
-	gchar *cfgdata;
-	GIOChannel *cfgfile;
-	GIOStatus status;
 
-	cfgdata = g_key_file_to_data(conf->cfg, &len, &gerror);
-	if (!cfgdata) {
-		die("%s\n", gerror->message);
+	if (!conf->modified) {
+		/* no changes made to config */
+		return;
 	}
 
-	if (conf->modified) {
-		cfgfile = g_io_channel_new_file(conf->config_file, "w", &gerror);
-		if (!cfgfile) {
-			die("%s\n", gerror->message);
-		}
-
-		/* FIXME: if the number of chars written is not "len", something happened.
-		 * Check for errors appropriately...*/
-		status = g_io_channel_write_chars(cfgfile, cfgdata, len, NULL, &gerror);
-		if (status != G_IO_STATUS_NORMAL) {
-			// FIXME: we should deal with temporary failures (G_IO_STATUS_AGAIN)
-			die("%s\n", gerror->message);
-		}
-		g_io_channel_shutdown(cfgfile, TRUE, &gerror);
-		g_io_channel_unref(cfgfile);
+	/* write contents of cfg to config_file */
+	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
+		die("%s\n", gerror->message);
 	}
 }
 
