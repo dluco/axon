@@ -74,6 +74,7 @@ void terminal_init(Terminal *term)
 
 void terminal_load_config(Terminal *term, Config *conf)
 {
+	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);

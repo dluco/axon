@@ -3,7 +3,7 @@
 
 #define DEFAULT_CONFIG_FILE PACKAGE"rc"
 #define CFG_GROUP PACKAGE
-#define DEFAULT_FONT "Ubuntu Mono,monospace 13"
+#define DEFAULT_FONT "Monospace, 11"
 #define SCROLL_ON_OUTPUT FALSE
 #define SCROLL_ON_KEYSTROKE TRUE
 #define SCROLLBAR FALSE
