@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.0
+Name=myterm
+Comment=Simple terminal emulator
+GenericName=Terminal Emulator
+Exec=myterm
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=GTK;System;TerminalEmulator;
+StartupNotify=true

@@ -43,6 +43,16 @@ utils.o: utils.c
 clean:
 	rm -rf *.o myterm
 
+install: all
+	@echo installing
+	@cp myterm.desktop /usr/share/applications/
+	@echo run "make uninstall" to remove
+
+uninstall:
+	@echo uninstalling...
+	@rm -rf ~/.config/myterm/
+	@rm -f /usr/share/applications/myterm.desktop
+
 again: clean all
 
 test:

@@ -8,6 +8,7 @@
 #include "terminal.h"
 #include "utils.h"
 
+/* remove the need for global? */
 Config *conf;
 
 static void init(void)
