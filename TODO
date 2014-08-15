@@ -1,4 +1,4 @@
-- config file/library
+- add geometry to config: 80x25?
 - popup menu on right-click
 - options parsing:
 	- getopt

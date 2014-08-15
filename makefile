@@ -17,7 +17,7 @@ debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 debug: all
 
 myterm: $(OBJ)
-	@echo $(CC) -o myte
+	@echo $(CC) -o myterm
 	@$(CC) $(OBJ) $(LDFLAGS) -o myterm
 
 callback.o: callback.c

@@ -5,7 +5,6 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "config.h"
 #include "terminal.h"
 #include "utils.h"
 
@@ -57,6 +56,8 @@ int main(int argc, char *argv[])
 	/* initialize terminal instance */
 	term = terminal_new();
 	terminal_init(term);
+	terminal_load_config(term, conf);
+	terminal_run(term, "test");
 
 	/* run gtk main loop */
 	gtk_main();

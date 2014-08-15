@@ -40,7 +40,7 @@ void config_init(Config *conf)
 	conf->show_scrollbar = SCROLLBAR;
 	conf->scrollback_lines = SCROLLBACK_LINES;
 	conf->audible_bell = AUDIBLE_BELL;
-	conf->visual_bell = VISUAL_BELL;
+	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
 	conf->fullscreen = FALSE;
 	conf->modified = FALSE;
@@ -112,10 +112,10 @@ void config_load(Config *conf)
 	}
 	conf->audible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visual_bell", NULL)) {
-		config_set_boolean("visual_bell", VISUAL_BELL);
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visible_bell", NULL)) {
+		config_set_boolean("visible_bell", VISIBLE_BELL);
 	}
-	conf->visual_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visual_bell", NULL);
+	conf->visible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
 		config_set_boolean("blinking_cursor", BLINKING_CURSOR);

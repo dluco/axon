@@ -9,7 +9,7 @@
 #define SCROLLBAR TRUE
 #define SCROLLBACK_LINES -1
 #define AUDIBLE_BELL FALSE
-#define VISUAL_BELL FALSE
+#define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
 
 typedef struct config {
@@ -21,7 +21,7 @@ typedef struct config {
 	gboolean show_scrollbar;
 	int scrollback_lines;
 	gboolean audible_bell;
-	gboolean visual_bell;
+	gboolean visible_bell;
 	gboolean blinking_cursor;
 	gboolean fullscreen;
 	gboolean modified;
