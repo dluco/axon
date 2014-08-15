@@ -19,18 +19,16 @@ static void init(void)
 	conf = config_new();
 	
 	/* set default values */
-	conf->scroll_on_output = FALSE;
-	conf->scroll_on_keystroke = TRUE;
-	conf->show_scrollbar = TRUE;
-	conf->scrollback_lines = -1;
+	config_init(conf);
 	
+	/* load configuration file */
 	config_load(conf);
 }
 
 static void cleanup(void)
 {
+	/* save and destroy config */
 	config_save(conf);
-
 	config_destroy(conf);
 }
 

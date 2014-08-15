@@ -1,9 +1,23 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 
 #include "config.h"
 #include "utils.h"
+
+/* macros */
+#define config_set_integer(key, value) \
+	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
+
+#define config_set_string(key, value) \
+	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
+
+#define config_set_boolean(key, value) \
+	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
 
 Config *config_new(void)
 {
@@ -16,6 +30,22 @@ Config *config_new(void)
 	return conf;
 }
 
+/* initialize Config with default values */
+void config_init(Config *conf)
+{
+	assert(conf != NULL);
+
+	conf->scroll_on_output = SCROLL_ON_OUTPUT;
+	conf->scroll_on_keystroke = SCROLL_ON_KEYSTROKE;
+	conf->show_scrollbar = SCROLLBAR;
+	conf->scrollback_lines = SCROLLBACK_LINES;
+	conf->audible_bell = AUDIBLE_BELL;
+	conf->visual_bell = VISUAL_BELL;
+	conf->blinking_cursor = BLINKING_CURSOR;
+	conf->fullscreen = FALSE;
+	conf->modified = FALSE;
+}
+
 void config_load(Config *conf)
 {
 	GError *gerror = NULL;
@@ -24,7 +54,6 @@ void config_load(Config *conf)
 
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
-	conf->modified = FALSE;
 
 	config_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
 	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
@@ -52,36 +81,46 @@ void config_load(Config *conf)
 	g_free(config_dir);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
-		g_key_file_set_value(conf->cfg, CFG_GROUP, "font", DEFAULT_FONT);
-		conf->modified = TRUE;
+		config_set_string("font", DEFAULT_FONT);
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
 	conf->font = g_strdup(tmp);
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {
-		g_key_file_set_boolean(conf->cfg, CFG_GROUP, "scroll_on_output", SCROLL_ON_OUTPUT);
-		conf->modified = TRUE;
+		config_set_boolean("scroll_on_output", SCROLL_ON_OUTPUT);
 	}
 	conf->scroll_on_output = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_output", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL)) {
-		g_key_file_set_boolean(conf->cfg, CFG_GROUP, "scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
-		conf->modified = TRUE;
+		config_set_boolean("scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
 	}
 	conf->scroll_on_keystroke = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollbar", NULL)) {
-		g_key_file_set_boolean(conf->cfg, CFG_GROUP, "scrollbar", SCROLLBAR);
-		conf->modified = TRUE;
+		config_set_boolean("scrollbar", SCROLLBAR);
 	}
 	conf->show_scrollbar = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scrollbar", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollback_lines", NULL)) {
-		g_key_file_set_integer(conf->cfg, CFG_GROUP, "scrollback_lines", SCROLLBACK_LINES);
-		conf->modified = TRUE;
+		config_set_integer("scrollback_lines", SCROLLBACK_LINES);
 	}
 	conf->scrollback_lines = g_key_file_get_integer(conf->cfg, CFG_GROUP, "scrollback_lines", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
+		config_set_boolean("audible_bell", AUDIBLE_BELL);
+	}
+	conf->audible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visual_bell", NULL)) {
+		config_set_boolean("visual_bell", VISUAL_BELL);
+	}
+	conf->visual_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visual_bell", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
+		config_set_boolean("blinking_cursor", BLINKING_CURSOR);
+	}
+	conf->blinking_cursor= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 }
 
 void config_save(Config *conf)

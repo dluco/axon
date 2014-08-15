@@ -4,3 +4,5 @@
 	- getopt
 	- argp*
 	- g_options
+- move some #includes to the header files that they apply to?
+- only update cfg in config_save, not whenever a setting is changed?
