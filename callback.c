@@ -2,6 +2,8 @@
 #include <vte/vte.h>
 
 #include "terminal.h"
+#include "callback.h"
+#include "utils.h"
 
 #define WRITE_OUT FALSE
 
@@ -170,12 +172,24 @@ void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
 
 gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 {
+	glong column, row;
+
 	if (event->type != GDK_BUTTON_PRESS) {
 		return FALSE;
 	}
+	
+	/* find out if the cursor was over a matched expression */
+	column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
+	row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
+	term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, NULL);
 
 	switch(event->button) {
 	case 1:
+		/* open url if any */
+		if (term->match) {
+			open_url(NULL, term->match);
+			return TRUE;
+		}
 		break;
 	case 2:
 		break;
@@ -218,4 +232,32 @@ void fullscreen(GtkWidget *widget, Terminal *term)
 		gtk_window_unfullscreen(GTK_WINDOW(term->window));
 		term->fullscreen = FALSE;
 	}
+}
+
+void open_url(GtkWidget *widget, char *match)
+{
+	GError *gerror = NULL;
+	gchar *cmd;
+	gchar *browser = NULL;
+
+	browser = (gchar *)g_getenv("BROWSER");
+
+	if (browser) {
+		cmd = g_strdup_printf("%s %s", browser, match);
+	} else {
+		if ( (browser = g_find_program_in_path("xdg-open")) ) {
+			cmd = g_strdup_printf("%s %s", browser, match);
+			g_free(browser);
+		} else {
+			cmd = g_strdup_printf("firefox %s", match);
+		}
+	}
+
+	if (!g_spawn_command_line_async(cmd, &gerror)) {
+		print_err("Couldn't exec \"%s\": %s", cmd, gerror->message);
+		g_error_free(gerror);
+	}
+
+	g_free(cmd);
+	g_free(match);
 }

@@ -11,6 +11,7 @@ typedef struct terminal {
 	GtkWidget *scrollbar;
 	/* state variables */
 	gboolean fullscreen;
+	char *match; /* matched regex string */
 } Terminal;
 
 Terminal *terminal_new(void);

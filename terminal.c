@@ -13,7 +13,7 @@ Terminal *terminal_new(void)
 	Terminal *term;
 
 	if (!(term = malloc(sizeof(*term)))) {
-		die("failure to malloc terminal");
+		die("failure to malloc terminal\n");
 	}
 
 	return term;
@@ -85,18 +85,38 @@ void terminal_init(Terminal *term)
 
 void terminal_load_config(Terminal *term, Config *conf)
 {
+	GRegex *regex;
+	GError *gerror = NULL;
+	int id;
+
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
+	/* set the annoying bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
+	/* disable the stupid blinking cursor... */
 	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte),
 			(conf->blinking_cursor) ?
 				VTE_CURSOR_BLINK_ON :
 				VTE_CURSOR_BLINK_OFF);
+	vte_terminal_set_cursor_shape(VTE_TERMINAL(term->vte), conf->cursor_type);
+	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
 //	vte_terminal_set_size(VTE_TERMINAL(terminal), 80, 24);
+
+	/* build the url regex */
+	regex = g_regex_new(HTTP_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
+	if (gerror) {
+		print_err("failed to parse regex pattern: %s", gerror->message);
+		g_error_free(gerror);
+		return;
+	}
+	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+	/* release the regex owned by vte now */
+	g_regex_unref(regex);
+	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
 }
 
 void terminal_run(Terminal *term, char *cmd)

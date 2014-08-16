@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <vte/vte.h>
 
 #include "config.h"
 #include "utils.h"
@@ -42,7 +43,6 @@ void config_init(Config *conf)
 	conf->audible_bell = AUDIBLE_BELL;
 	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
-	conf->fullscreen = FALSE;
 	conf->modified = FALSE;
 }
 
@@ -121,6 +121,16 @@ void config_load(Config *conf)
 		config_set_boolean("blinking_cursor", BLINKING_CURSOR);
 	}
 	conf->blinking_cursor= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
+		config_set_string("word_chars", "VTE_CURSOR_SHAPE_BLOCK");
+	}
+	conf->cursor_type = g_key_file_get_integer(conf->cfg, CFG_GROUP, "cursor_type", NULL);
+	
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
+		config_set_string("word_chars", DEFAULT_WORD_CHARS);
+	}
+	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
 }
 
 void config_save(Config *conf)
