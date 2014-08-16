@@ -18,7 +18,7 @@ debug: clean all
 
 myterm: $(OBJ)
 	@echo $(CC) -o myterm
-	@$(CC) $(OBJ) $(LDFLAGS) -o myterm
+	@$(CC) $(OBJ) $(LDFLAGS) -o ${PACKAGE}
 
 callback.o: callback.c
 	@echo $(CC) -c callback.c

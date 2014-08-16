@@ -9,6 +9,8 @@ typedef struct terminal {
 	GtkWidget *hbox;
 	GtkWidget *vte; /* VTE terminal */
 	GtkWidget *scrollbar;
+	/* state variables */
+	gboolean fullscreen;
 } Terminal;
 
 Terminal *terminal_new(void);

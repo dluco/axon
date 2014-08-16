@@ -11,7 +11,9 @@ void char_size_realized(GtkWidget *, gpointer);
 void refresh_window(GtkWidget *, gpointer);
 void resize_window(GtkWidget *, guint, guint, gpointer);
 gboolean button_press(GtkWidget *, GdkEventButton *, Terminal *);
+gboolean key_press(GtkWidget *, GdkEvent *, Terminal *);
 void copy_text(GtkWidget *, Terminal *);
 void paste_text(GtkWidget *, Terminal *);
+void fullscreen(GtkWidget *, Terminal *);
 
 #endif /* CALLBACK_H */

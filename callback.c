@@ -168,23 +168,32 @@ void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
 	}
 }
 
-gboolean button_press(GtkWidget *widget, GdkEventButton *button_event, Terminal *term)
+gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 {
-	if (button_event->type != GDK_BUTTON_PRESS) {
+	if (event->type != GDK_BUTTON_PRESS) {
 		return FALSE;
 	}
 
-	switch(button_event->button) {
+	switch(event->button) {
 	case 1:
 		break;
 	case 2:
 		break;
 	case 3:
 		/* Right button: show popup menu */
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, button_event->button, button_event->time);
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
 		return TRUE;
 	default:
 		break;
+	}
+
+	return FALSE;
+}
+
+gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
+{
+	if (event->type != GDK_KEY_PRESS) {
+		return FALSE;
 	}
 
 	return FALSE;
@@ -198,4 +207,15 @@ void copy_text(GtkWidget *widget, Terminal *term)
 void paste_text(GtkWidget *widget, Terminal *term)
 {
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
+}
+
+void fullscreen(GtkWidget *widget, Terminal *term)
+{
+	if (term->fullscreen == FALSE) {
+		term->fullscreen = TRUE;
+		gtk_window_fullscreen(GTK_WINDOW(term->window));
+	} else {
+		gtk_window_unfullscreen(GTK_WINDOW(term->window));
+		term->fullscreen = FALSE;
+	}
 }

@@ -28,6 +28,9 @@ void terminal_init(Terminal *term)
 	term->vte = vte_terminal_new();
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 
+	/* set state variables */
+	term->fullscreen = FALSE;
+
 	/* setup */
 //	gtk_window_set_icon_name(GTK_WINDOW(term->window), "terminal");
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
@@ -44,6 +47,8 @@ void terminal_init(Terminal *term)
 			G_CALLBACK(delete_event), NULL);
 	g_signal_connect(G_OBJECT(term->window), "destroy",
 			G_CALLBACK(destroy_window), term);
+	g_signal_connect(G_OBJECT(term->window), "key-press-event",
+			G_CALLBACK(key_press), term);
 
 	/* *************************************************** */
 	/* Connect to the "char-size" changed signal to set geometry hints
