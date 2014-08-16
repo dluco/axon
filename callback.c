@@ -167,3 +167,35 @@ void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
 		gtk_border_free (inner_border);
 	}
 }
+
+gboolean button_press(GtkWidget *widget, GdkEventButton *button_event, Terminal *term)
+{
+	if (button_event->type != GDK_BUTTON_PRESS) {
+		return FALSE;
+	}
+
+	switch(button_event->button) {
+	case 1:
+		break;
+	case 2:
+		break;
+	case 3:
+		/* Right button: show popup menu */
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, button_event->button, button_event->time);
+		return TRUE;
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+void copy_text(GtkWidget *widget, Terminal *term)
+{
+	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
+}
+
+void paste_text(GtkWidget *widget, Terminal *term)
+{
+	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
+}

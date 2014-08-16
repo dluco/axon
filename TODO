@@ -1,8 +1,9 @@
 - add geometry to config: 80x25?
-- popup menu on right-click
+- popup menu on right-click & menu_key
+	- new terminal option
+	- preferences option
 - options parsing:
 	- getopt
 	- argp*
 	- g_options
-- move some #includes to the header files that they apply to?
 - only update cfg in config_save, not whenever a setting is changed?

@@ -9,12 +9,12 @@ PKGDEPS=gtk+-2.0 vte
 CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 LDFLAGS=-O2 -flto $(shell pkg-config --libs ${PKGDEPS})
 
-OBJ=callback.o config.o main.o terminal.o utils.o
+OBJ=callback.o config.o main.o menu.o terminal.o utils.o
 
 all: myterm
 
 debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-debug: all
+debug: clean all
 
 myterm: $(OBJ)
 	@echo $(CC) -o myterm
@@ -31,6 +31,10 @@ config.o: config.c
 main.o: main.c
 	@echo $(CC) -c main.c
 	@$(CC) $(CFLAGS) main.c
+
+menu.o: menu.c
+	@echo $(CC) -c menu.c
+	@$(CC) $(CFLAGS) menu.c
 
 terminal.o: terminal.c
 	@echo $(CC) -c terminal.c

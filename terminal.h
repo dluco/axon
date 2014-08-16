@@ -5,8 +5,9 @@
 
 typedef struct terminal {
 	GtkWidget *window;
-	GtkWidget *vte; /* VTE terminal */
+	GtkWidget *menu;
 	GtkWidget *hbox;
+	GtkWidget *vte; /* VTE terminal */
 	GtkWidget *scrollbar;
 } Terminal;
 

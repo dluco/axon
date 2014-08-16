@@ -5,6 +5,7 @@
 
 #include "terminal.h"
 #include "callback.h"
+#include "menu.h"
 #include "utils.h"
 
 Terminal *terminal_new(void)
@@ -22,6 +23,7 @@ void terminal_init(Terminal *term)
 {
 	/* initialize ui elements */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	term->menu = gtk_menu_new();
 	term->hbox = gtk_hbox_new(FALSE, 0);
 	term->vte = vte_terminal_new();
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
@@ -29,6 +31,8 @@ void terminal_init(Terminal *term)
 	/* setup */
 //	gtk_window_set_icon_name(GTK_WINDOW(term->window), "terminal");
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
+
+	menu_popup_init(term->menu, term);
 	
 	/* arranging */
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
@@ -51,10 +55,12 @@ void terminal_init(Terminal *term)
 			G_CALLBACK(char_size_realized), term->window);
 	/* *************************************************** */
 
-	g_signal_connect(G_OBJECT(term->vte), "child-exited",
-			G_CALLBACK(child_exited), term);
+	g_signal_connect(G_OBJECT(term->vte), "button-press-event",
+			G_CALLBACK(button_press), term);
 	g_signal_connect(G_OBJECT(term->vte), "window-title-changed",
 			G_CALLBACK(set_title), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "child-exited",
+			G_CALLBACK(child_exited), term);
 	g_signal_connect(G_OBJECT(term->vte), "refresh-window",
 			G_CALLBACK(refresh_window), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "resize-window",
