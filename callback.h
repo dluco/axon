@@ -16,6 +16,7 @@ gboolean key_press(GtkWidget *, GdkEventKey *, Terminal *);
 void copy_text(GtkWidget *, Terminal *);
 void paste_text(GtkWidget *, Terminal *);
 void fullscreen(GtkWidget *, Terminal *);
+void preferences(GtkWidget *, Terminal *);
 void open_url(GtkWidget *, char *);
 
 #endif /* CALLBACK_H */

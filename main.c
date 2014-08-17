@@ -15,6 +15,8 @@ static void init(void)
 {
 	/* set TERM env-variable? */
 
+	gtk_window_set_default_icon_name("terminal");
+
 	/* create a new Config instance */
 	conf = config_new();
 	

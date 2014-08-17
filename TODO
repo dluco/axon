@@ -1,9 +1,10 @@
 - add geometry to config: 80x25?
-- popup menu on right-click & menu_key
+- popup menu on right-click(DONE) & menu_key(DONE)
 	- new terminal option
-	- preferences option
 - options parsing:
 	- getopt
 	- argp*
 	- g_options
 - only update cfg in config_save, not whenever a setting is changed?
+- preferences dialog:
+	- font

@@ -32,7 +32,6 @@ void terminal_init(Terminal *term)
 	term->fullscreen = FALSE;
 
 	/* setup */
-//	gtk_window_set_icon_name(GTK_WINDOW(term->window), "terminal");
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
 
 	menu_popup_init(term->menu, term);

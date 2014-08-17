@@ -1,8 +1,10 @@
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <vte/vte.h>
 
 #include "terminal.h"
 #include "callback.h"
+#include "dialog.h"
 #include "utils.h"
 
 #define WRITE_OUT FALSE
@@ -221,6 +223,12 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		return FALSE;
 	}
 
+	switch(event->keyval) {
+	case GDK_KEY_Menu:
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->keyval, event->time);
+		return TRUE;
+	}
+
 	return FALSE;
 }
 
@@ -243,6 +251,11 @@ void fullscreen(GtkWidget *widget, Terminal *term)
 		gtk_window_unfullscreen(GTK_WINDOW(term->window));
 		term->fullscreen = FALSE;
 	}
+}
+
+void preferences(GtkWidget *widget, Terminal *term)
+{
+	dialog_preferences(term);
 }
 
 void open_url(GtkWidget *widget, char *match)
