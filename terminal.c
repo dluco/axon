@@ -50,6 +50,7 @@ void terminal_init(Terminal *term)
 	g_signal_connect(G_OBJECT(term->window), "key-press-event",
 			G_CALLBACK(key_press), term);
 
+	/* FIXME: there must be a better way to handle resizing... */
 	/* *************************************************** */
 	/* Connect to the "char-size" changed signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
