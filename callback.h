@@ -10,6 +10,7 @@ void char_size_changed(GtkWidget *, guint, guint, gpointer);
 void char_size_realized(GtkWidget *, gpointer);
 void refresh_window(GtkWidget *, gpointer);
 void resize_window(GtkWidget *, guint, guint, gpointer);
+void selection_changed(GtkWidget *, GtkWidget *);
 gboolean button_press(GtkWidget *, GdkEventButton *, Terminal *);
 gboolean key_press(GtkWidget *, GdkEventKey *, Terminal *);
 void copy_text(GtkWidget *, Terminal *);

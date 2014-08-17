@@ -170,9 +170,18 @@ void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
 	}
 }
 
+void selection_changed(GtkWidget *terminal, GtkWidget *widget)
+{
+	if (GTK_IS_MENU_ITEM(widget)) {
+		/* toggle sensitivity */
+		gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(terminal)));
+	}
+}
+
 gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 {
 	glong column, row;
+	gint tag;
 
 	if (event->type != GDK_BUTTON_PRESS) {
 		return FALSE;
@@ -181,12 +190,12 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 	/* find out if the cursor was over a matched expression */
 	column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
 	row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
-	term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, NULL);
+	term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
 
 	switch(event->button) {
 	case 1:
 		/* open url if any */
-		if (term->match) {
+		if (term->match != NULL) {
 			open_url(NULL, term->match);
 			return TRUE;
 		}
@@ -196,10 +205,12 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 	case 3:
 		/* Right button: show popup menu */
 		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+		/* TODO: show "open link" and "copy link" options in menu if match? */
 		return TRUE;
 	default:
 		break;
 	}
+	/* FIXME: free(match)? */
 
 	return FALSE;
 }
@@ -259,5 +270,4 @@ void open_url(GtkWidget *widget, char *match)
 	}
 
 	g_free(cmd);
-	g_free(match);
 }

@@ -123,7 +123,7 @@ void config_load(Config *conf)
 	conf->blinking_cursor= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
-		config_set_string("word_chars", "VTE_CURSOR_SHAPE_BLOCK");
+		config_set_string("cursor_type", "VTE_CURSOR_SHAPE_BLOCK");
 	}
 	conf->cursor_type = g_key_file_get_integer(conf->cfg, CFG_GROUP, "cursor_type", NULL);
 	

@@ -31,6 +31,10 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	g_signal_connect(G_OBJECT(fullscreen_item), "activate", G_CALLBACK(fullscreen), term);
 	g_signal_connect(G_OBJECT(quit_item), "activate", G_CALLBACK(destroy_window), term);
 
+	/* copy_item sensitivity */
+	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(selection_changed), copy_item);
+	gtk_widget_set_sensitive(copy_item, FALSE);
+
 	gtk_widget_show(copy_item);
 	gtk_widget_show(paste_item);
 	gtk_widget_show(fullscreen_item);

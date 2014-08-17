@@ -45,7 +45,8 @@ utils.o: utils.c
 	@$(CC) $(CFLAGS) utils.c
 
 clean:
-	rm -rf *.o myterm
+	@echo cleaning...
+	@rm -rf *.o myterm
 
 install: all
 	@echo installing
@@ -56,10 +57,5 @@ uninstall:
 	@echo uninstalling...
 	@rm -rf ~/.config/myterm/
 	@rm -f /usr/share/applications/myterm.desktop
-
-again: clean all
-
-test:
-	@echo ${VERSION}
 
 .PHONY: all clean debug again
