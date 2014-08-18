@@ -14,6 +14,7 @@ typedef struct options {
 	gboolean hold;
 	const char *geometry;
 	char *config_file;
+	char *output_file;
 	gboolean fullscreen;
 	gboolean maximize;
 } Options;
