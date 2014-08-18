@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
 #include "terminal.h"
+#include "options.h"
 #include "utils.h"
 
 /* remove the need for global? */
@@ -13,6 +15,7 @@ Config *conf;
 
 static void init(void)
 {
+	setlocale(LC_ALL, "");
 	/* set TERM env-variable? */
 
 	gtk_window_set_default_icon_name("terminal");
@@ -34,22 +37,14 @@ static void cleanup(void)
 	config_destroy(conf);
 }
 
-static void usage(void)
-{
-	printf("Usage:\n"
-			"  %s [OPTION]\n\n",
-			PACKAGE);
-}
-
 int main(int argc, char *argv[])
 {
 	Terminal *term;
-
-	if (argc > 1) {
-		usage();
-		return EXIT_SUCCESS;
-	}
+	Options *opts;
 	
+	opts = options_new();
+	options_parse(opts, argc, argv);
+
 	/* initialize gtk+ */
 	gtk_init(&argc, &argv);
 
@@ -60,7 +55,7 @@ int main(int argc, char *argv[])
 	term = terminal_new();
 	terminal_init(term);
 	terminal_load_config(term, conf);
-	terminal_run(term, "test");
+	terminal_run(term, "command goes here");
 
 	/* run gtk main loop */
 	gtk_main();
