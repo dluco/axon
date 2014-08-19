@@ -2,6 +2,7 @@
 #define TERMINAL_H
 
 #include "config.h"
+#include "options.h"
 
 typedef struct terminal {
 	GtkWidget *window;
@@ -12,11 +13,14 @@ typedef struct terminal {
 	/* state variables */
 	gboolean fullscreen;
 	char *match; /* matched regex string */
+	Config *conf; /* associated Config */
+	Options *opts; /* associated Options */
 } Terminal;
 
 Terminal *terminal_new(void);
 void terminal_init(Terminal *);
 void terminal_load_config(Terminal *, Config *);
+void terminal_load_options(Terminal *, Options *);
 void terminal_run(Terminal *, char *);
 
 #endif /* TERMINAL_H */

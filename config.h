@@ -20,6 +20,8 @@ typedef struct config {
 	GKeyFile *cfg;
 	char *config_file;
 	char *font;
+	int columns;
+	int rows;
 	gboolean scroll_on_output;
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;

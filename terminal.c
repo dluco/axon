@@ -89,6 +89,8 @@ void terminal_load_config(Terminal *term, Config *conf)
 	GError *gerror = NULL;
 	int id;
 
+	term->conf = conf;
+
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
@@ -117,6 +119,37 @@ void terminal_load_config(Terminal *term, Config *conf)
 	/* release the regex owned by vte now */
 	g_regex_unref(regex);
 	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
+}
+
+void terminal_load_options(Terminal *term, Options *opts)
+{
+	term->opts = opts;
+
+	if (opts->title) {
+		/* TODO: allow for title "modes" - append, replace (default), ignore */
+		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
+	}
+	
+	if (opts->columns) {
+		term->conf->columns = opts->columns;
+	}
+
+	if (opts->rows) {
+		term->conf->rows = opts->rows;
+	}
+
+	if (opts->font) {
+		/*
+		term->conf->font = pango_font_description_from_string(option_font);
+		*/
+	}
+
+	/* mutually exclusive options, obviously */
+	if (opts->fullscreen) {
+		fullscreen(NULL, term);
+	} else if (opts->maximize) {
+		gtk_window_maximize(GTK_WINDOW(term->window));
+	}
 }
 
 void terminal_run(Terminal *term, char *cmd)

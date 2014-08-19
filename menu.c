@@ -38,6 +38,8 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	/* copy_item sensitivity */
 	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(selection_changed), copy_item);
 	gtk_widget_set_sensitive(copy_item, FALSE);
+	/* set fullscreen_item to monitor the window state for changes */
+	g_signal_connect(G_OBJECT(term->window), "window-state-event", G_CALLBACK(window_state_event), fullscreen_item);
 
 	gtk_widget_show(copy_item);
 	gtk_widget_show(paste_item);
