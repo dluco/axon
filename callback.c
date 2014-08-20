@@ -177,19 +177,6 @@ void selection_changed(GtkWidget *terminal, GtkWidget *widget)
 	gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(terminal)));
 }
 
-gboolean window_state_event(GtkWidget *window, GdkEventWindowState *event, GtkWidget *widget)
-{
-	if ((event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) == GDK_WINDOW_STATE_FULLSCREEN
-		&& (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) == GDK_WINDOW_STATE_FULLSCREEN) {
-		/* fullscreen was changed and is now active */
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widget), TRUE);
-	} else {
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(widget), FALSE);
-	}
-
-	return FALSE;
-}
-
 gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 {
 	glong column, row;

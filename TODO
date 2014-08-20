@@ -1,5 +1,2 @@
 - add geometry to config: 80x25?
 - link in Config and Options to Terminal?
-- fullscreen_item:
-	- how to make active when fullscreen
-	- BUG: --fullscreen causes bad behaviour
