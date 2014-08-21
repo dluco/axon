@@ -253,6 +253,7 @@ void fullscreen(GtkWidget *widget, Terminal *term)
 void preferences(GtkWidget *widget, Terminal *term)
 {
 	dialog_preferences_font(term);
+//	dialog_preferences(term);
 }
 
 void open_url(GtkWidget *widget, char *match)

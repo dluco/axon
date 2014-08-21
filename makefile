@@ -1,4 +1,4 @@
-PACKAGE=myterm
+PACKAGE=axon
 VERSION=0.0
 
 DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\"
@@ -11,13 +11,13 @@ LDFLAGS=-O2 -flto $(shell pkg-config --libs ${PKGDEPS})
 
 OBJ=callback.o config.o dialog.o main.o menu.o options.o terminal.o utils.o
 
-all: myterm
+all: axon
 
 debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 debug: clean all
 
-myterm: $(OBJ)
-	@echo $(CC) -o myterm
+axon: $(OBJ)
+	@echo $(CC) -o ${PACKAGE}
 	@$(CC) $(OBJ) $(LDFLAGS) -o ${PACKAGE}
 
 callback.o: callback.c
@@ -57,13 +57,12 @@ clean:
 	@rm -rf *.o myterm
 
 install: all
-	@echo installing
-	@cp myterm.desktop /usr/share/applications/
+	@echo installing...
+	@cp ${PACKAGE}.desktop /usr/share/applications/
 	@echo run "make uninstall" to remove
 
 uninstall:
 	@echo uninstalling...
-	@rm -rf ~/.config/myterm/
-	@rm -f /usr/share/applications/myterm.desktop
+	@rm -f /usr/share/applications/${PACKAGE}.desktop
 
-.PHONY: all clean debug again
+.PHONY: all clean debug

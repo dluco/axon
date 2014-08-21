@@ -1,9 +1,9 @@
 [Desktop Entry]
 Version=0.0
-Name=myterm
+Name=axon
 Comment=Simple terminal emulator
 GenericName=Terminal Emulator
-Exec=myterm
+Exec=axon
 Icon=utilities-terminal
 Terminal=false
 Type=Application
