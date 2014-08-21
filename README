@@ -1,0 +1,10 @@
+axon
+====
+
+Lightweight terminal emulator
+
+
+dependencies
+============
+
+vte-2.0 and GTK+-2.0
