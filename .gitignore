@@ -1,5 +1,5 @@
 # Ignore compiled binaries
-myte
+myterm
 
 # Ignore objects and archives
 *.[oa]
