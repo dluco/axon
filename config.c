@@ -7,19 +7,6 @@
 #include "config.h"
 #include "utils.h"
 
-/* macros */
-#define config_set_integer(key, value) \
-	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);\
-	conf->modified = TRUE;
-
-#define config_set_string(key, value) \
-	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);\
-	conf->modified = TRUE;
-
-#define config_set_boolean(key, value) \
-	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);\
-	conf->modified = TRUE;
-
 Config *config_new(void)
 {
 	Config *conf;
@@ -44,6 +31,24 @@ void config_init(Config *conf)
 	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
 	conf->modified = FALSE;
+}
+
+void config_set_integer(Config *conf, const char *key, int value)
+{
+	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
+}
+
+void config_set_value(Config *conf, const char *key, const char *value)
+{
+	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
+}
+
+void config_set_boolean(Config *conf, const char *key, gboolean value)
+{
+	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);\
+	conf->modified = TRUE;
 }
 
 void config_load(Config *conf)
@@ -81,54 +86,54 @@ void config_load(Config *conf)
 	g_free(config_dir);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
-		config_set_string("font", DEFAULT_FONT);
+		config_set_value(conf, "font", DEFAULT_FONT);
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
 	conf->font = g_strdup(tmp);
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {
-		config_set_boolean("scroll_on_output", SCROLL_ON_OUTPUT);
+		config_set_boolean(conf, "scroll_on_output", SCROLL_ON_OUTPUT);
 	}
 	conf->scroll_on_output = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_output", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL)) {
-		config_set_boolean("scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
+		config_set_boolean(conf, "scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
 	}
 	conf->scroll_on_keystroke = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollbar", NULL)) {
-		config_set_boolean("scrollbar", SCROLLBAR);
+		config_set_boolean(conf, "scrollbar", SCROLLBAR);
 	}
 	conf->show_scrollbar = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scrollbar", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollback_lines", NULL)) {
-		config_set_integer("scrollback_lines", SCROLLBACK_LINES);
+		config_set_integer(conf, "scrollback_lines", SCROLLBACK_LINES);
 	}
 	conf->scrollback_lines = g_key_file_get_integer(conf->cfg, CFG_GROUP, "scrollback_lines", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
-		config_set_boolean("audible_bell", AUDIBLE_BELL);
+		config_set_boolean(conf, "audible_bell", AUDIBLE_BELL);
 	}
 	conf->audible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visible_bell", NULL)) {
-		config_set_boolean("visible_bell", VISIBLE_BELL);
+		config_set_boolean(conf, "visible_bell", VISIBLE_BELL);
 	}
 	conf->visible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
-		config_set_boolean("blinking_cursor", BLINKING_CURSOR);
+		config_set_boolean(conf, "blinking_cursor", BLINKING_CURSOR);
 	}
 	conf->blinking_cursor= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
-		config_set_string("cursor_type", "VTE_CURSOR_SHAPE_BLOCK");
+		config_set_value(conf, "cursor_type", "VTE_CURSOR_SHAPE_BLOCK");
 	}
 	conf->cursor_type = g_key_file_get_integer(conf->cfg, CFG_GROUP, "cursor_type", NULL);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
-		config_set_string("word_chars", DEFAULT_WORD_CHARS);
+		config_set_value(conf, "word_chars", DEFAULT_WORD_CHARS);
 	}
 	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
 }
