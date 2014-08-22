@@ -1,2 +1,3 @@
 - add geometry to config: 80x25?
 - static dialogs?
+	- NO - uses up too much memory
