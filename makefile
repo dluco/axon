@@ -54,7 +54,7 @@ utils.o: utils.c
 
 clean:
 	@echo cleaning...
-	@rm -rf *.o myterm
+	@rm -rf *.o ${PACKAGE}
 
 install: all
 	@echo installing...
