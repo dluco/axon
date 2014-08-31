@@ -10,59 +10,61 @@
 #include "options.h"
 #include "utils.h"
 
-/* remove the need for global? */
-Config *conf;
-
-static void init(void)
+static void init(Options *opts, Config *conf)
 {
 	setlocale(LC_ALL, "");
+
 	/* set TERM env-variable? */
 
-	gtk_window_set_default_icon_name("terminal");
-
-	/* create a new Config instance */
-	conf = config_new();
-	
-	/* set default values */
 	config_init(conf);
 	
-	/* load configuration file */
-	config_load(conf);
+	/* Load configuration file */
+	config_load(conf, opts->config_file);
+
+	/* Set default window icon for all windows */
+	gtk_window_set_default_icon_name("terminal");
 }
 
-static void cleanup(void)
+static void cleanup(Options *opts, Config *conf)
 {
-	/* save and destroy config */
+	options_free(opts);
+	
+	/* Save and destroy config */
 	config_save(conf);
-	config_destroy(conf);
+	config_free(conf);
 }
 
 int main(int argc, char *argv[])
 {
-	Terminal *term;
 	Options *opts;
+	Config *conf;
+	Terminal *term;
 	
+	/* Load commandline options */
 	opts = options_new();
 	options_parse(opts, argc, argv);
 
-	/* initialize gtk+ */
+	/* Initialize gtk+ */
+	/* FIXME: move to options_parse? */
 	gtk_init(&argc, &argv);
 
-	/* perform init of program */
-	init();
+	conf = config_new();
+	
+	/* Perform init of program */
+	init(opts, conf);
 
-	/* initialize terminal instance */
+	/* Initialize terminal instance */
 	term = terminal_new();
 	terminal_init(term);
 	terminal_load_config(term, conf);
 	terminal_load_options(term, opts);
 	terminal_run(term, "command goes here");
 
-	/* run gtk main loop */
+	/* Run gtk main loop */
 	gtk_main();
 
-	/* perform cleanup */
-	cleanup();
+	/* Perform cleanup */
+	cleanup(opts, conf);
 
 	return 0;
 }

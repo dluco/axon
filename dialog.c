@@ -3,7 +3,7 @@
 
 #include "terminal.h"
 
-
+/*
 void dialog_preferences(Terminal *term)
 {
 	GtkWidget *vbox;
@@ -27,6 +27,7 @@ void dialog_preferences(Terminal *term)
 	 	
 	return;
 }
+*/
 
 void dialog_preferences_font(Terminal *term)
 {

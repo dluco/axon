@@ -19,6 +19,7 @@
 typedef struct config {
 	GKeyFile *cfg;
 	char *config_file;
+//	PangoFontDescription *font;
 	char *font;
 	int columns;
 	int rows;
@@ -39,8 +40,8 @@ void config_init(Config *);
 void config_set_integer(Config *, const char *, int);
 void config_set_value(Config *, const char *, const char *);
 void config_set_boolean(Config *, const char *, gboolean);
-void config_load(Config *);
+void config_load(Config *, char *);
 void config_save(Config *);
-void config_destroy(Config *);
+void config_free(Config *);
 
 #endif /* CONFIG_H */

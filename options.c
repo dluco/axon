@@ -61,6 +61,7 @@ void options_parse(Options *opts, int argc, char *argv[])
 	}
 	g_option_context_free(context);
 
+	/* Print version info and exit */
 	if (opts->version) {
 		version();
 	}

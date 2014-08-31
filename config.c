@@ -18,7 +18,7 @@ Config *config_new(void)
 	return conf;
 }
 
-/* initialize Config with default values */
+/* Initialize Config with default values */
 void config_init(Config *conf)
 {
 	assert(conf != NULL);
@@ -31,6 +31,14 @@ void config_init(Config *conf)
 	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
 	conf->modified = FALSE;
+}
+
+void config_free(Config *conf)
+{
+	g_key_file_free(conf->cfg);
+	free(conf->config_file);
+//	pango_font_description_free(conf->font);
+	free(conf->font);
 }
 
 void config_set_integer(Config *conf, const char *key, int value)
@@ -51,7 +59,7 @@ void config_set_boolean(Config *conf, const char *key, gboolean value)
 	conf->modified = TRUE;
 }
 
-void config_load(Config *conf)
+void config_load(Config *conf, char *user_file)
 {
 	GError *gerror = NULL;
 	gchar *tmp = NULL;
@@ -66,15 +74,20 @@ void config_load(Config *conf)
 		g_mkdir(g_get_user_config_dir(), 0755);
 	}
 	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
-		/* program config dir does not exist - create it */
+		/* Program config dir does not exist - create it */
 		g_mkdir(config_dir, 0755);
 	}
-	/* TODO: allow user to specify config file */
-	conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
+	if (user_file) {
+		conf->config_file = g_build_filename(config_dir, user_file, NULL);
+	} else {
+		conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
+	}
+		
+	g_free(config_dir);
 
 	/* Open config file */
 	if (!(g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror))) {
-		/* if file does not exist, then ignore - one will be created */
+		/* If file does not exist, then ignore - one will be created */
 		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
 			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
 			die("invalid config file format\n");
@@ -82,13 +95,12 @@ void config_load(Config *conf)
 		g_error_free(gerror);
 		gerror = NULL;
 	}
-		
-	g_free(config_dir);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
 		config_set_value(conf, "font", DEFAULT_FONT);
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
+//	conf->font = pango_font_description_from_string(tmp);
 	conf->font = g_strdup(tmp);
 	free(tmp);
 	
@@ -142,20 +154,13 @@ void config_save(Config *conf)
 {
 	GError *gerror = NULL;
 
+	/* No changes made to config */
 	if (!conf->modified) {
-		/* no changes made to config */
 		return;
 	}
 
-	/* write contents of cfg to config_file */
+	/* Write contents of cfg to config_file */
 	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
 		die("%s\n", gerror->message);
 	}
-}
-
-void config_destroy(Config *conf)
-{
-	g_key_file_free(conf->cfg);
-	free(conf->config_file);
-	free(conf->font);
 }

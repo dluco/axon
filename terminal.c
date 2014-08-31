@@ -91,6 +91,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	term->conf = conf;
 
+//	vte_terminal_set_font(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
@@ -139,9 +140,8 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 
 	if (opts->font) {
-		/*
-		term->conf->font = pango_font_description_from_string(option_font);
-		*/
+//		term->conf->font = pango_font_description_from_string(opts->font);
+		term->conf->font = g_strdup(opts->font);
 	}
 
 	/* mutually exclusive options, obviously */
