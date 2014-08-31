@@ -149,6 +149,13 @@ void terminal_load_options(Terminal *term, Options *opts)
 		fullscreen(NULL, term);
 	} else if (opts->maximize) {
 		gtk_window_maximize(GTK_WINDOW(term->window));
+	} else if (opts->geometry) {
+		if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), opts->geometry)) {
+			print_err("Invalid geometry.\n");
+		} else {
+			term->conf->columns = vte_terminal_get_column_count(VTE_TERMINAL(term->vte));
+			term->conf->rows = vte_terminal_get_row_count(VTE_TERMINAL(term->vte));
+		}
 	}
 }
 
