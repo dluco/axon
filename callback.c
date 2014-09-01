@@ -276,7 +276,7 @@ void open_url(GtkWidget *widget, char *match)
 	}
 
 	if (!g_spawn_command_line_async(cmd, &gerror)) {
-		print_err("Couldn't exec \"%s\": %s", cmd, gerror->message);
+		print_err("Couldn't exec \"%s\": %s\n", cmd, gerror->message);
 		g_error_free(gerror);
 	}
 
