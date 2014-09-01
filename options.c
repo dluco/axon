@@ -35,7 +35,7 @@ void options_parse(Options *opts, int argc, char *argv[])
 	int n;
 	int t_argc;
 	char **t_argv;
-//	gboolean match = FALSE;
+	gboolean match = FALSE;
 
 	GOptionContext *context;
 	GError *gerror = NULL;
@@ -62,20 +62,21 @@ void options_parse(Options *opts, int argc, char *argv[])
 	 * sure GOption doesn't grab any arguments meant for the command being called.
 	 * The "match" flag is used so that commands such as:
 	 * $ axon -e xterm -e ranger
-	 * can be run correctly.
+	 * can be run correctly. However, as soon as the "-e" option is given,
+	 * ALL other options afterwards are considered part of the execute command. Therefore,
+	 * the "-e" option should ONLY be given after all other options.
 	 */
 	t_argv = calloc(argc + 1, sizeof(*t_argv));
-	t_argc = 0;
+	t_argc = argc;
 	n = 0;
 
 	for (i = 0; i < argc; i++) {
-//		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
-		if (g_strcmp0(argv[i], "-e") == 0) {
+		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
 			t_argv[n] = "-e";
 			n++;
 			t_argv[n] = "--";
 			t_argc = argc + 1;
-//			match = TRUE;
+			match = TRUE;
 		} else {
 			t_argv[n] = g_strdup(argv[i]);
 		}
