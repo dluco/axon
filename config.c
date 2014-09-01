@@ -12,7 +12,7 @@ Config *config_new(void)
 	Config *conf;
 
 	if (!(conf = malloc(sizeof(*conf)))) {
-		die("failure to malloc config\n");
+		die("failure to allocate memory for config\n");
 	}
 
 	return conf;
@@ -78,7 +78,23 @@ void config_load(Config *conf, char *user_file)
 		g_mkdir(config_dir, 0755);
 	}
 	if (user_file) {
-		conf->config_file = g_build_filename(config_dir, user_file, NULL);
+		/*
+		 * A user specified file MUST exist - otherwise, they could give a bogus
+		 * file like "/foo/bar" and mess up the root directory (if they had rights)
+		 */
+		if (g_path_is_absolute(user_file)) {
+			/* Absolute path was given */
+			conf->config_file = g_strdup(user_file);
+		} else {
+			/* Relative path to file was given - prepend current directory */
+			tmp = g_get_current_dir();
+			conf->config_file = g_build_filename(tmp, user_file, NULL);
+			g_free(tmp);
+		}
+		/* Test if user supplied config file actually exists and is not a directory */
+		if (!g_file_test(conf->config_file, G_FILE_TEST_IS_REGULAR)) {
+			print_err("invalid config file \"%s\"\n", user_file);
+		}
 	} else {
 		conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
 	}

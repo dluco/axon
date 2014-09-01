@@ -10,7 +10,7 @@ Options *options_new(void)
 	Options *opts;
 
 	if (!(opts = malloc(sizeof(*opts)))) {
-		die("failed to malloc opts\n");
+		die("failed to allocate memory for options\n");
 	}
 
 	/* set initial values - don't bother with init function */

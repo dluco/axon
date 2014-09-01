@@ -13,7 +13,7 @@ Terminal *terminal_new(void)
 	Terminal *term;
 
 	if (!(term = malloc(sizeof(*term)))) {
-		die("failure to malloc terminal\n");
+		die("failure to allocate memory for terminal\n");
 	}
 
 	return term;

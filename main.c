@@ -27,6 +27,7 @@ static void init(Options *opts, Config *conf)
 
 static void cleanup(Options *opts, Config *conf)
 {
+	/* Destroy options */
 	options_free(opts);
 	
 	/* Save and destroy config */
