@@ -102,7 +102,7 @@ void config_load(Config *conf, char *user_file)
 	g_free(config_dir);
 
 	/* Open config file */
-	if (!(g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror))) {
+	if (!g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
 		/* If file does not exist, then ignore - one will be created */
 		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
 			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {

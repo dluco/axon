@@ -7,34 +7,30 @@
 #include "dialog.h"
 #include "utils.h"
 
-#define WRITE_OUT FALSE
-
 void destroy(Terminal *term)
 {
-	const char *output_file;
 	GFile *file;
 	GOutputStream *stream;
 	GError *gerror = NULL;
 
-	output_file = "out.txt";
-	
-	if (output_file && WRITE_OUT) {
-		file = g_file_new_for_commandline_arg (output_file);
-		stream = G_OUTPUT_STREAM (g_file_replace (file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
+	if (term->opts->output_file) {
+		file = g_file_new_for_commandline_arg(term->opts->output_file);
+		/* Open a new output stream for overwriting the file - NO backup is made */
+		stream = G_OUTPUT_STREAM(g_file_replace(file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
 
 		if (stream) {
-			vte_terminal_write_contents (VTE_TERMINAL(term->vte), stream,
-						     VTE_TERMINAL_WRITE_DEFAULT,
-						     NULL, &gerror);
-			g_object_unref (stream);
+			vte_terminal_write_contents(VTE_TERMINAL(term->vte), stream, VTE_TERMINAL_WRITE_DEFAULT, NULL, &gerror);
+			
+			g_object_unref(stream);
 		}
 
+		/* Catch errors from multiple functions - shouldn't have overwriting of errors */
 		if (gerror) {
 			fprintf(stderr, "%s\n", gerror->message);
-			g_error_free (gerror);
+			g_error_free(gerror);
 		}
 
-		g_object_unref (file);
+		g_object_unref(file);
 	}
 
 //	gtk_widget_destroy(term->window);
