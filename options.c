@@ -35,7 +35,7 @@ void options_parse(Options *opts, int argc, char *argv[])
 	int n;
 	int t_argc;
 	char **t_argv;
-	gboolean match = FALSE;
+//	gboolean match = FALSE;
 
 	GOptionContext *context;
 	GError *gerror = NULL;
@@ -66,17 +66,20 @@ void options_parse(Options *opts, int argc, char *argv[])
 	 */
 	t_argv = calloc(argc + 1, sizeof(*t_argv));
 	t_argc = 0;
+	n = 0;
 
-	for (i = 0, n = 0; i < argc; i++, n++) {
-		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
+	for (i = 0; i < argc; i++) {
+//		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
+		if (g_strcmp0(argv[i], "-e") == 0) {
 			t_argv[n] = "-e";
 			n++;
 			t_argv[n] = "--";
 			t_argc = argc + 1;
-			match = TRUE;
+//			match = TRUE;
 		} else {
 			t_argv[n] = g_strdup(argv[i]);
 		}
+		n++;
 	}
 
 	context = g_option_context_new("- terminal emulator");
