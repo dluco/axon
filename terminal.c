@@ -112,7 +112,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 	/* build the url regex */
 	regex = g_regex_new(HTTP_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
 	if (gerror) {
-		print_err("failed to parse regex pattern: %s", gerror->message);
+		print_err("%s\n", gerror->message);
 		g_error_free(gerror);
 		return;
 	}
@@ -131,14 +131,6 @@ void terminal_load_options(Terminal *term, Options *opts)
 		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
 	}
 	
-	if (opts->columns) {
-		term->conf->columns = opts->columns;
-	}
-
-	if (opts->rows) {
-		term->conf->rows = opts->rows;
-	}
-
 	if (opts->font) {
 //		term->conf->font = pango_font_description_from_string(opts->font);
 		term->conf->font = g_strdup(opts->font);
@@ -151,7 +143,7 @@ void terminal_load_options(Terminal *term, Options *opts)
 		gtk_window_maximize(GTK_WINDOW(term->window));
 	} else if (opts->geometry) {
 		if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), opts->geometry)) {
-			print_err("Invalid geometry.\n");
+			print_err("invalid geometry format\n");
 		} else {
 			term->conf->columns = vte_terminal_get_column_count(VTE_TERMINAL(term->vte));
 			term->conf->rows = vte_terminal_get_row_count(VTE_TERMINAL(term->vte));
