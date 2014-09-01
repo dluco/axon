@@ -91,21 +91,23 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	term->conf = conf;
 
-//	vte_terminal_set_font(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
+
 	/* set the annoying bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
+	
 	/* disable the stupid blinking cursor... */
 	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte),
 			(conf->blinking_cursor) ?
 				VTE_CURSOR_BLINK_ON :
 				VTE_CURSOR_BLINK_OFF);
 	vte_terminal_set_cursor_shape(VTE_TERMINAL(term->vte), conf->cursor_type);
+	vte_terminal_set_mouse_autohide(VTE_TERMINAL(term->vte), conf->autohide_mouse);
 	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
 //	vte_terminal_set_size(VTE_TERMINAL(terminal), 80, 24);
 
