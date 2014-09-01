@@ -1,2 +1,4 @@
 - if output-file is "-"?
+- resize method?
 - work on man page
+- URGENT: seg fault after adding in autohide mouse?

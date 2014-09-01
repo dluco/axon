@@ -151,12 +151,85 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 }
 
-void terminal_run(Terminal *term, char *cmd)
+void terminal_run(Terminal *term)
 {
-	char *command[] = {"/bin/bash", NULL};
+	int cmd_argc = 0;
+	char **cmd_argv;
+	char *cmd_joined;
+	char *fork_argv[3];
+	GError *gerror = NULL;
+	char *path;
 
-	vte_terminal_fork_command_full(VTE_TERMINAL(term->vte),
-			VTE_PTY_DEFAULT, NULL, command,
-			NULL, G_SPAWN_DEFAULT, NULL,
-			NULL, NULL, NULL);
+	if (term->opts->execute || term->opts->xterm_execute) {
+		if (term->opts->execute) {
+			/* -x option */
+			if (!g_shell_parse_argv(term->opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
+				/*
+				switch (gerror->code) {
+				case G_SHELL_ERROR_EMPTY_STRING:
+					die("failed");
+				case G_SHELL_ERROR_BAD_QUOTING:
+					die("failed");
+				case G_SHELL_ERROR_FAILED:
+					die("failed");
+				}
+				*/
+				die("%s\n", gerror->message);
+			}
+		} else {
+			/* -e option - last in commandline, scoops up rest of arguments */
+			if (term->opts->xterm_args) {
+				cmd_joined = g_strjoinv(" ", term->opts->xterm_args);
+				if (!g_shell_parse_argv(cmd_joined, &cmd_argc, &cmd_argv, &gerror)) {
+					die("%s\n", gerror->message);
+				}
+				g_free(cmd_joined);
+			}
+		}
+
+		/* Check for a valid command */
+		if (cmd_argc > 0) {
+			path = g_find_program_in_path(cmd_argv[0]);
+			if (path) {
+				if (!vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
+						NULL, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
+						NULL, NULL, &term->pid, &gerror)) {
+					/* Non-fatal error */
+					print_err("%s\n", gerror->message);
+				}
+			} else {
+				/* Fatal error - otherwise it gets tricky */
+				die("%s: command not found\n", cmd_argv[0]);
+			}
+			g_free(path);
+			g_strfreev(cmd_argv);
+			//g_strfreev(term->opts->xterm_execute_args);
+		}
+	} else { 
+		/* No execute option */
+		if (term->opts->hold) { /* FIXME: is this necessary? */
+			print_err("hold option given without any command\n");
+			term->opts->hold = FALSE;
+		}
+
+		/* 
+		 * Set up args in preparation for fork. Real argv vector starts at
+		 * argv[1] because we're using G_SPAWN_FILE_AND_ARGV_ZERO to be
+		 * able to launch login shells.
+		 */
+		fork_argv[0] = g_strdup(g_getenv("SHELL"));
+		if (term->opts->login) {
+			fork_argv[1] = g_strdup_printf("-%s", g_getenv("SHELL"));
+		} else {
+			fork_argv[1] = g_strdup(g_getenv("SHELL"));
+		}
+		fork_argv[2] = NULL;
+
+		vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
+				NULL, fork_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_FILE_AND_ARGV_ZERO,
+				NULL, NULL, &term->pid, NULL);
+		
+		g_free(fork_argv[0]);
+		g_free(fork_argv[1]);
+	}
 }

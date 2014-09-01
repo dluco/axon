@@ -15,12 +15,13 @@ typedef struct terminal {
 	char *match; /* matched regex string */
 	Config *conf; /* associated Config */
 	Options *opts; /* associated Options */
+	GPid pid;
 } Terminal;
 
 Terminal *terminal_new(void);
 void terminal_init(Terminal *);
 void terminal_load_config(Terminal *, Config *);
 void terminal_load_options(Terminal *, Options *);
-void terminal_run(Terminal *, char *);
+void terminal_run(Terminal *);
 
 #endif /* TERMINAL_H */

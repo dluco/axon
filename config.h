@@ -15,6 +15,7 @@
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
+#define AUTOHIDE_MOUSE TRUE
 
 typedef struct config {
 	GKeyFile *cfg;
@@ -31,6 +32,7 @@ typedef struct config {
 	gboolean visible_bell;
 	gboolean blinking_cursor;
 	VteTerminalCursorShape cursor_type;
+	gboolean autohide_mouse;
 	char *word_chars;
 	gboolean modified;
 } Config;

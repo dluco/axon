@@ -143,23 +143,28 @@ void config_load(Config *conf, char *user_file)
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
 		config_set_boolean(conf, "audible_bell", AUDIBLE_BELL);
 	}
-	conf->audible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
+	conf->audible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visible_bell", NULL)) {
 		config_set_boolean(conf, "visible_bell", VISIBLE_BELL);
 	}
-	conf->visible_bell= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
+	conf->visible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
 		config_set_boolean(conf, "blinking_cursor", BLINKING_CURSOR);
 	}
-	conf->blinking_cursor= g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
+	conf->blinking_cursor = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
 		config_set_value(conf, "cursor_type", "VTE_CURSOR_SHAPE_BLOCK");
 	}
 	conf->cursor_type = g_key_file_get_integer(conf->cfg, CFG_GROUP, "cursor_type", NULL);
 	
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "autohide_mouse", NULL)) {
+		config_set_boolean(conf, "autohide_mouse", AUTOHIDE_MOUSE);
+	}
+	conf->autohide_mouse = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "autohide_mouse", NULL);
+
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
 		config_set_value(conf, "word_chars", DEFAULT_WORD_CHARS);
 	}

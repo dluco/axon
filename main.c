@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	terminal_init(term);
 	terminal_load_config(term, conf);
 	terminal_load_options(term, opts);
-	terminal_run(term, "command goes here");
+	terminal_run(term);
 
 	/* Run gtk main loop */
 	gtk_main();
