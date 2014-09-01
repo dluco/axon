@@ -31,6 +31,12 @@ void options_free(Options *opts)
 
 void options_parse(Options *opts, int argc, char *argv[])
 {
+	int i;
+	int n;
+	int t_argc;
+	char **t_argv;
+	gboolean match = FALSE;
+
 	GOptionContext *context;
 	GError *gerror = NULL;
 	GOptionEntry entries[] = {
@@ -51,13 +57,36 @@ void options_parse(Options *opts, int argc, char *argv[])
 		{ NULL }
 	};
 
+	/* 
+	 * Rewrite argv to include a "--" after the -e argument. This is necessary to make
+	 * sure GOption doesn't grab any arguments meant for the command being called.
+	 * The "match" flag is used so that commands such as:
+	 * $ axon -e xterm -e ranger
+	 * can be run correctly.
+	 */
+	t_argv = calloc(argc + 1, sizeof(*t_argv));
+	t_argc = 0;
+
+	for (i = 0, n = 0; i < argc; i++, n++) {
+		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
+			t_argv[n] = "-e";
+			n++;
+			t_argv[n] = "--";
+			t_argc = argc + 1;
+			match = TRUE;
+		} else {
+			t_argv[n] = g_strdup(argv[i]);
+		}
+	}
+
 	context = g_option_context_new("- terminal emulator");
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_add_group(context, gtk_get_option_group(TRUE));
-	if (!g_option_context_parse(context, &argc, &argv, &gerror)) {
+	if (!g_option_context_parse(context, &t_argc, &t_argv, &gerror)) {
 		die("%s\n", gerror->message);
 	}
 	g_option_context_free(context);
+	g_strfreev(t_argv);
 
 	/* Print version info and exit */
 	if (opts->version) {
