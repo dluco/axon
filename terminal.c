@@ -92,6 +92,10 @@ void terminal_load_config(Terminal *term, Config *conf)
 	term->conf = conf;
 
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
+	
+//	terminal_load_colour_scheme(term, conf->colour_scheme);
+
+	/* Scroll-related stuff */
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
@@ -153,6 +157,83 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 }
 
+void terminal_load_colour_scheme(Terminal *term, const char *colour_scheme)
+{
+	GKeyFile *cfg;
+	GError *gerror = NULL;
+	gchar *tmp = NULL;
+	char *scheme_dir = NULL; /* 
+							  * TODO: provide scheme_dir as a compile-time constant,
+							  * defaulting to /usr/share/axon/colourschemes
+							  */
+
+	/* Config file initialization */
+	cfg = g_key_file_new();
+
+	scheme_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
+	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
+		/* ~/.config does not exist - create it */
+		g_mkdir(g_get_user_config_dir(), 0755);
+	}
+	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
+		/* Program config dir does not exist - create it */
+		g_mkdir(config_dir, 0755);
+	}
+	if (user_file) {
+		/*
+		 * A user specified file MUST exist - otherwise, they could give a bogus
+		 * file like "/foo/bar" and mess up the root directory (if they had rights)
+		 */
+		if (g_path_is_absolute(user_file)) {
+			/* Absolute path was given */
+			conf->config_file = g_strdup(user_file);
+		} else {
+			/* Relative path to file was given - prepend current directory */
+			tmp = g_get_current_dir();
+			conf->config_file = g_build_filename(tmp, user_file, NULL);
+			g_free(tmp);
+		}
+		/* Test if user supplied config file actually exists and is not a directory */
+		if (!g_file_test(conf->config_file, G_FILE_TEST_IS_REGULAR)) {
+			print_err("invalid config file \"%s\"\n", user_file);
+		}
+	} else {
+		conf->config_file = g_build_filename(scheme_dir, DEFAULT_CONFIG_FILE, NULL);
+	}
+		
+	g_free(scheme_dir);
+
+	/* Open config file */
+	if (!g_key_file_load_from_file(cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+		/* If file does not exist, then ignore - one will be created */
+		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
+			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
+			die("invalid config file format\n");
+		}
+		g_error_free(gerror);
+		gerror = NULL;
+	}
+
+	if (!g_key_file_has_key(cfg, CFG_GROUP, "font", NULL)) {
+		config_set_value(conf, "font", DEFAULT_FONT);
+	}
+	tmp = g_key_file_get_value(cfg, CFG_GROUP, "font", NULL);
+	conf->font = g_strdup(tmp);
+	free(tmp);
+
+	if (!g_key_file_has_key(cfg, CFG_GROUP, "colour_scheme", NULL)) {
+		config_set_value(conf, "colour_scheme", DEFAULT_COLOUR_SCHEME);
+	}
+	tmp = g_key_file_get_value(cfg, CFG_GROUP, "colour_scheme", NULL);
+	conf->colour_scheme = g_strdup(tmp);
+	free(tmp);
+	
+	if (!g_key_file_has_key(cfg, CFG_GROUP, "scroll_on_output", NULL)) {
+		config_set_boolean(conf, "scroll_on_output", SCROLL_ON_OUTPUT);
+	}
+	conf->scroll_on_output = g_key_file_get_boolean(cfg, CFG_GROUP, "scroll_on_output", NULL);
+}
+
 void terminal_run(Terminal *term)
 {
 	int cmd_argc = 0;
@@ -166,16 +247,6 @@ void terminal_run(Terminal *term)
 		if (term->opts->execute) {
 			/* -x option */
 			if (!g_shell_parse_argv(term->opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
-				/*
-				switch (gerror->code) {
-				case G_SHELL_ERROR_EMPTY_STRING:
-					die("failed");
-				case G_SHELL_ERROR_BAD_QUOTING:
-					die("failed");
-				case G_SHELL_ERROR_FAILED:
-					die("failed");
-				}
-				*/
 				die("%s\n", gerror->message);
 			}
 		} else {

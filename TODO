@@ -1,5 +1,15 @@
 - if output-file is "-"?
 - resize method?
 - work on man page
-- URGENT: seg fault after adding in autohide mouse?
-- only "-e" works as an option now?
+- seg fault after adding in autohide mouse?
+- highlight email addresses too?
+- multiple windows:
+	- closing one terminal window closes all of them...
+	- command from new window?
+	- how to handle output file?
+	- share Config and Options?
+- colorschemes:
+	- use same as xfterm? (.theme file)
+	- ColorScheme object?
+		- where to store
+		- how to load (name = load name, NULL = load all)

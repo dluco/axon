@@ -9,3 +9,6 @@ log*
 
 # Ignore example directory
 example
+
+# Ignore vte doc directory
+vte-html*

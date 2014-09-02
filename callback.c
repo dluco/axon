@@ -225,6 +225,15 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 	return FALSE;
 }
 
+void new_window(GtkWidget *widget, Terminal *term)
+{
+	Terminal *n_term = terminal_new();
+	terminal_init(n_term);
+	terminal_load_config(n_term, term->conf);
+	terminal_load_options(n_term, term->opts);
+	terminal_run(n_term);
+}
+
 void copy_text(GtkWidget *widget, Terminal *term)
 {
 	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));

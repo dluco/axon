@@ -37,25 +37,24 @@ void config_free(Config *conf)
 {
 	g_key_file_free(conf->cfg);
 	free(conf->config_file);
-//	pango_font_description_free(conf->font);
 	free(conf->font);
 }
 
 void config_set_integer(Config *conf, const char *key, int value)
 {
-	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);\
+	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);
 	conf->modified = TRUE;
 }
 
 void config_set_value(Config *conf, const char *key, const char *value)
 {
-	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);\
+	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);
 	conf->modified = TRUE;
 }
 
 void config_set_boolean(Config *conf, const char *key, gboolean value)
 {
-	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);\
+	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);
 	conf->modified = TRUE;
 }
 
@@ -116,8 +115,14 @@ void config_load(Config *conf, char *user_file)
 		config_set_value(conf, "font", DEFAULT_FONT);
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
-//	conf->font = pango_font_description_from_string(tmp);
 	conf->font = g_strdup(tmp);
+	free(tmp);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "colour_scheme", NULL)) {
+		config_set_value(conf, "colour_scheme", DEFAULT_COLOUR_SCHEME);
+	}
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "colour_scheme", NULL);
+	conf->colour_scheme = g_strdup(tmp);
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {

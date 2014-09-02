@@ -23,6 +23,7 @@ static void init(Options *opts, Config *conf)
 
 	/* Set default window icon for all windows */
 	gtk_window_set_default_icon_name("terminal");
+	g_set_application_name(PACKAGE);
 }
 
 static void cleanup(Options *opts, Config *conf)
