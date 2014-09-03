@@ -8,7 +8,8 @@
 #define DEFAULT_COLUMNS 80
 #define DEFAULT_ROWS 24
 #define DEFAULT_FONT "Monospace, 11"
-#define DEFAULT_COLOUR_SCHEME "white-on-black"
+#define DEFAULT_COLOR_SCHEME "white-on-black"
+#define PALETTE_SIZE 16
 #define SCROLL_ON_OUTPUT FALSE
 #define SCROLL_ON_KEYSTROKE TRUE
 #define SCROLLBAR FALSE
@@ -22,7 +23,7 @@ typedef struct config {
 	GKeyFile *cfg;
 	char *config_file;
 	char *font;
-	char *colour_scheme;
+	char *color_scheme;
 	int columns;
 	int rows;
 	gboolean scroll_on_output;

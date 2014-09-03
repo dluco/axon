@@ -22,6 +22,7 @@ Terminal *terminal_new(void);
 void terminal_init(Terminal *);
 void terminal_load_config(Terminal *, Config *);
 void terminal_load_options(Terminal *, Options *);
+void terminal_load_color_scheme(Terminal *, const char *);
 void terminal_run(Terminal *);
 
 #endif /* TERMINAL_H */

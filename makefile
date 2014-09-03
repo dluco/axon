@@ -1,8 +1,10 @@
 PACKAGE=axon
 VERSION=0.0
 
-DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\"
+DATADIR=/usr/share
 
+DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\" \
+	-DDATADIR=\"${DATADIR}\"
 
 CC=gcc
 PKGDEPS=gtk+-2.0 vte
@@ -58,11 +60,13 @@ clean:
 
 install: all
 	@echo installing...
-	@cp ${PACKAGE}.desktop /usr/share/applications/
+	@cp data/${PACKAGE}.desktop /usr/share/applications/
+	@cp -r colorschemes/ /usr/share/${PACKAGE}/
 	@echo run "make uninstall" to remove
 
 uninstall:
 	@echo uninstalling...
 	@rm -f /usr/share/applications/${PACKAGE}.desktop
+	@rm -rf /usr/share/${PACKAGE}/colorschemes/
 
-.PHONY: all clean debug
+.PHONY: all clean debug install uninstall

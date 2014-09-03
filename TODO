@@ -13,3 +13,5 @@
 	- ColorScheme object?
 		- where to store
 		- how to load (name = load name, NULL = load all)
+- move source files to src dir?
+	- root leve makefile?

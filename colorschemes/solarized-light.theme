@@ -1,0 +1,8 @@
+[scheme]
+name=Solarized (light)
+color_foreground=#657b83
+color_background=#fdf6e3
+color_cursor=#586e75
+color_palette=#eee8d5;#dc322f;#859900;#b58900;#268bd2;#d33682;#2aa198;#073642;#fdf6e3;#cb4b16;#93a1a1;#839496;#657b83;#6c71c4;#586e75;#002b36
+color_bold=#586e75
+color_bold_use_default=false

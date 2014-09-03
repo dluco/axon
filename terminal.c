@@ -93,7 +93,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	
-//	terminal_load_colour_scheme(term, conf->colour_scheme);
+	terminal_load_color_scheme(term, conf->color_scheme);
 
 	/* Scroll-related stuff */
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
@@ -157,81 +157,90 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 }
 
-void terminal_load_colour_scheme(Terminal *term, const char *colour_scheme)
+void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 {
 	GKeyFile *cfg;
+	GdkColor fg;
+	GdkColor bg;
+	GdkColor cursor;
+	GdkColor palette[PALETTE_SIZE];
+	gboolean has_fg = FALSE;
+	gboolean has_bg = FALSE;
+	gboolean has_cursor = FALSE;
+	gboolean valid_palette = FALSE;
+	gchar *scheme_file;
+	gchar *palette_str;
+	gchar **palette_colors;
+	gchar *tmp;
+	int n = 0;
 	GError *gerror = NULL;
-	gchar *tmp = NULL;
-	char *scheme_dir = NULL; /* 
-							  * TODO: provide scheme_dir as a compile-time constant,
-							  * defaulting to /usr/share/axon/colourschemes
-							  */
 
 	/* Config file initialization */
 	cfg = g_key_file_new();
 
-	scheme_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
-	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
-		/* ~/.config does not exist - create it */
-		g_mkdir(g_get_user_config_dir(), 0755);
-	}
-	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
-		/* Program config dir does not exist - create it */
-		g_mkdir(config_dir, 0755);
-	}
-	if (user_file) {
-		/*
-		 * A user specified file MUST exist - otherwise, they could give a bogus
-		 * file like "/foo/bar" and mess up the root directory (if they had rights)
-		 */
-		if (g_path_is_absolute(user_file)) {
-			/* Absolute path was given */
-			conf->config_file = g_strdup(user_file);
-		} else {
-			/* Relative path to file was given - prepend current directory */
-			tmp = g_get_current_dir();
-			conf->config_file = g_build_filename(tmp, user_file, NULL);
-			g_free(tmp);
-		}
-		/* Test if user supplied config file actually exists and is not a directory */
-		if (!g_file_test(conf->config_file, G_FILE_TEST_IS_REGULAR)) {
-			print_err("invalid config file \"%s\"\n", user_file);
-		}
-	} else {
-		conf->config_file = g_build_filename(scheme_dir, DEFAULT_CONFIG_FILE, NULL);
-	}
-		
-	g_free(scheme_dir);
+	tmp = g_strdup_printf("%s.%s", color_scheme, "theme");
+	scheme_file = g_build_filename(DATADIR, PACKAGE, "colorschemes", tmp, NULL);
+	g_free(tmp);
 
 	/* Open config file */
-	if (!g_key_file_load_from_file(cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
-		/* If file does not exist, then ignore - one will be created */
-		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
-			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
-			die("invalid config file format\n");
-		}
+	if (!g_key_file_load_from_file(cfg, scheme_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+		/* color scheme file not found - default terminal colors will be used */
+		print_err("color scheme \"%s\": %s\n", color_scheme, gerror->message);
 		g_error_free(gerror);
 		gerror = NULL;
+	} else {
+		/* Begin parsing scheme file */
+		if ((tmp = g_key_file_get_value(cfg, "scheme", "color_foreground", NULL))) {
+			has_fg = gdk_color_parse(tmp, &fg);
+			g_free(tmp);
+		}
+
+		if ((tmp = g_key_file_get_value(cfg, "scheme", "color_background", NULL))) {
+			has_bg = gdk_color_parse(tmp, &bg);
+			g_free(tmp);
+		}
+
+		if ((tmp = g_key_file_get_value(cfg, "scheme", "color_cursor", NULL))) {
+			has_cursor = gdk_color_parse(tmp, &cursor);
+			g_free(tmp);
+		}
+
+		if ((palette_str = g_key_file_get_value(cfg, "scheme", "color_palette", NULL))) {
+			palette_colors = g_strsplit(palette_str, ";", -1);
+			g_free(palette_str);
+
+			if (palette_colors) {
+				for (n = 0; palette_colors[n] != NULL && n < PALETTE_SIZE; n++) {
+					if (!gdk_color_parse(palette_colors[n], palette + n)) {
+						print_err("unable to parse color \"%s\"", palette_colors[n]);
+						break; /* Cause valid_palette to fail */
+					}
+				}
+			}
+			g_strfreev(palette_colors);
+			valid_palette = (n == PALETTE_SIZE);
+		}
+
+		/* Apply color palette to terminal */
+		if (valid_palette) {
+			vte_terminal_set_colors(VTE_TERMINAL(term->vte),
+					has_fg ? &fg : NULL, has_bg ? &bg : NULL,
+					palette, PALETTE_SIZE);
+		} else if (has_fg || has_bg) {
+			/* No palette but foreground and/or background colors */
+			vte_terminal_set_color_foreground(VTE_TERMINAL(term->vte), has_fg ? &fg : NULL);
+			vte_terminal_set_color_background(VTE_TERMINAL(term->vte), has_bg ? &bg : NULL);
+		} else {
+			/* No palette or colors - set default colors */
+			vte_terminal_set_default_colors(VTE_TERMINAL(term->vte));
+		}
+
+		/* Apply cursor color */
+		vte_terminal_set_color_cursor(VTE_TERMINAL(term->vte), has_cursor ? &cursor : NULL);
 	}
 
-	if (!g_key_file_has_key(cfg, CFG_GROUP, "font", NULL)) {
-		config_set_value(conf, "font", DEFAULT_FONT);
-	}
-	tmp = g_key_file_get_value(cfg, CFG_GROUP, "font", NULL);
-	conf->font = g_strdup(tmp);
-	free(tmp);
-
-	if (!g_key_file_has_key(cfg, CFG_GROUP, "colour_scheme", NULL)) {
-		config_set_value(conf, "colour_scheme", DEFAULT_COLOUR_SCHEME);
-	}
-	tmp = g_key_file_get_value(cfg, CFG_GROUP, "colour_scheme", NULL);
-	conf->colour_scheme = g_strdup(tmp);
-	free(tmp);
-	
-	if (!g_key_file_has_key(cfg, CFG_GROUP, "scroll_on_output", NULL)) {
-		config_set_boolean(conf, "scroll_on_output", SCROLL_ON_OUTPUT);
-	}
-	conf->scroll_on_output = g_key_file_get_boolean(cfg, CFG_GROUP, "scroll_on_output", NULL);
+	g_key_file_free(cfg);
+	g_free(scheme_file);
 }
 
 void terminal_run(Terminal *term)

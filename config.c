@@ -118,11 +118,11 @@ void config_load(Config *conf, char *user_file)
 	conf->font = g_strdup(tmp);
 	free(tmp);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "colour_scheme", NULL)) {
-		config_set_value(conf, "colour_scheme", DEFAULT_COLOUR_SCHEME);
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "color_scheme", NULL)) {
+		config_set_value(conf, "color_scheme", DEFAULT_COLOR_SCHEME);
 	}
-	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "colour_scheme", NULL);
-	conf->colour_scheme = g_strdup(tmp);
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
+	conf->color_scheme = g_strdup(tmp);
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {
