@@ -1,72 +1,48 @@
+# axon - lightweight terminal emulator
+# See LICENSE file for license details
+
+export # Export all variables to sub-makes
+
 PACKAGE=axon
 VERSION=0.0
 
 DATADIR=/usr/share
 
-DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\" \
-	-DDATADIR=\"${DATADIR}\"
-
-CC=gcc
-PKGDEPS=gtk+-2.0 vte
-CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-LDFLAGS=-O2 -flto $(shell pkg-config --libs ${PKGDEPS})
-
-OBJ=callback.o config.o dialog.o main.o menu.o options.o terminal.o utils.o
-
 all: axon
 
-debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-debug: clean all
-
-axon: $(OBJ)
-	@echo $(CC) -o ${PACKAGE}
-	@$(CC) $(OBJ) $(LDFLAGS) -o ${PACKAGE}
-
-callback.o: callback.c
-	@echo $(CC) -c callback.c
-	@$(CC) $(CFLAGS) callback.c
-
-config.o: config.c
-	@echo $(CC) -c config.c
-	@$(CC) $(CFLAGS) config.c
-
-dialog.o: dialog.c
-	@echo $(CC) -c dialog.c
-	@$(CC) $(CFLAGS) dialog.c
-
-main.o: main.c
-	@echo $(CC) -c main.c
-	@$(CC) $(CFLAGS) main.c
-
-menu.o: menu.c
-	@echo $(CC) -c menu.c
-	@$(CC) $(CFLAGS) menu.c
-
-options.o: options.c
-	@echo $(CC) -c options.c
-	@$(CC) $(CFLAGS) options.c
-
-terminal.o: terminal.c
-	@echo $(CC) -c terminal.c
-	@$(CC) $(CFLAGS) terminal.c
-
-utils.o: utils.c
-	@echo $(CC) -c utils.c
-	@$(CC) $(CFLAGS) utils.c
+axon:
+	@${MAKE} -C src/
 
 clean:
-	@echo cleaning...
+	@echo cleaning
 	@rm -rf *.o ${PACKAGE}
+	@${MAKE} -C src/ clean
+
+debug:
+	@echo making debug build
+	@${MAKE} -C src/ debug
 
 install: all
-	@echo installing...
-	@cp data/${PACKAGE}.desktop /usr/share/applications/
-	@cp -r colorschemes/ /usr/share/${PACKAGE}/
+	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@cp -f src/${PACKAGE} ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${PACKAGE}
+	@echo installing desktop file to ${DATADIR}/applications
+	@mkdir -p ${DATADIR}/applications
+	@cp -f data/${PACKAGE}.desktop ${DATADIR}/applications/
+	@echo installing colorscheme files to ${DATADIR}/${PACKAGE}
+	@mkdir -p ${DATADIR}/${PACKAGE}
+	@cp -rf colorschemes/ ${DATADIR}/${PACKAGE}/
 	@echo run "make uninstall" to remove
 
 uninstall:
-	@echo uninstalling...
-	@rm -f /usr/share/applications/${PACKAGE}.desktop
-	@rm -rf /usr/share/${PACKAGE}/colorschemes/
+	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
+	@rm -f ${DESTDIR}${PREFIX}/bin/${PACKAGE}
+	@echo removing desktop file from ${DATADIR}/applications
+	@rm -f ${DATADIR}/applications/${PACKAGE}.desktop
+	@echo removing colorscheme files from ${DATADIR}/${PACKAGE}
+	@rm -rf ${DATADIR}/${PACKAGE}/colorschemes/
+	@echo removing program data dir
+	@rm -rf ${DATADIR}/${PACKAGE}
 
 .PHONY: all clean debug install uninstall

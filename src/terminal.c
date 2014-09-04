@@ -169,7 +169,6 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 	gboolean has_cursor = FALSE;
 	gboolean valid_palette = FALSE;
 	gchar *scheme_file;
-	gchar *palette_str;
 	gchar **palette_colors;
 	gchar *tmp;
 	int n = 0;
@@ -205,10 +204,7 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 			g_free(tmp);
 		}
 
-		if ((palette_str = g_key_file_get_value(cfg, "scheme", "color_palette", NULL))) {
-			palette_colors = g_strsplit(palette_str, ";", -1);
-			g_free(palette_str);
-
+		if ((palette_colors = g_key_file_get_string_list(cfg, "scheme", "color_palette", NULL, NULL))) {
 			if (palette_colors) {
 				for (n = 0; palette_colors[n] != NULL && n < PALETTE_SIZE; n++) {
 					if (!gdk_color_parse(palette_colors[n], palette + n)) {

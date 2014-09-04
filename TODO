@@ -8,10 +8,4 @@
 	- command from new window?
 	- how to handle output file?
 	- share Config and Options?
-- colorschemes:
-	- use same as xfterm? (.theme file)
-	- ColorScheme object?
-		- where to store
-		- how to load (name = load name, NULL = load all)
-- move source files to src dir?
-	- root leve makefile?
+- default size is not 80x24?
