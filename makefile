@@ -12,15 +12,25 @@ all: axon
 
 axon:
 	@${MAKE} -C src/
+# For convenience, create link to executable
+	@ln -sf src/${PACKAGE} ${PACKAGE}
 
 clean:
 	@echo cleaning
-	@rm -rf *.o ${PACKAGE}
+	@rm -rf ${PACKAGE} ${PACKAGE}-${VERSION}/ ${PACKAGE}-${VERSION}.tar.gz
 	@${MAKE} -C src/ clean
 
 debug:
 	@echo making debug build
 	@${MAKE} -C src/ debug
+
+dist: clean
+	@echo creating dist tarball
+	@mkdir -p ${PACKAGE}-${VERSION}/
+	@cp -r AUTHORS LICENSE makefile README TODO \
+		colorschemes/ data/ src/ ${PACKAGE}-${VERSION}/
+	@tar -czf ${PACKAGE}-${VERSION}.tar.gz ${PACKAGE}-${VERSION}/
+	@rm -rf ${PACKAGE}-${VERSION}/
 
 install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
@@ -45,4 +55,4 @@ uninstall:
 	@echo removing program data dir
 	@rm -rf ${DATADIR}/${PACKAGE}
 
-.PHONY: all clean debug install uninstall
+.PHONY: all axon clean debug dist install uninstall
