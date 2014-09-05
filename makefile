@@ -37,21 +37,21 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f src/${PACKAGE} ${DESTDIR}${PREFIX}/bin
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/${PACKAGE}
-	@echo installing desktop file to ${DATADIR}/applications
-	@mkdir -p ${DATADIR}/applications
-	@cp -f data/${PACKAGE}.desktop ${DATADIR}/applications/
-	@echo installing colorscheme files to ${DATADIR}/${PACKAGE}
-	@mkdir -p ${DATADIR}/${PACKAGE}
-	@cp -rf colorschemes/ ${DATADIR}/${PACKAGE}/
+	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
+	@mkdir -p ${DESTDIR}${DATADIR}/applications
+	@cp -f data/${PACKAGE}.desktop ${DESTDIR}${DATADIR}/applications/
+	@echo installing colorscheme files to ${DESTDIR}${DATADIR}/${PACKAGE}
+	@mkdir -p ${DESTDIR}${DATADIR}/${PACKAGE}
+	@cp -rf colorschemes/ ${DESTDIR}${DATADIR}/${PACKAGE}/
 	@echo run "make uninstall" to remove
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
 	@rm -f ${DESTDIR}${PREFIX}/bin/${PACKAGE}
-	@echo removing desktop file from ${DATADIR}/applications
-	@rm -f ${DATADIR}/applications/${PACKAGE}.desktop
-	@echo removing colorscheme files from ${DATADIR}/${PACKAGE}
-	@rm -rf ${DATADIR}/${PACKAGE}/colorschemes/
+	@echo removing desktop file from ${DESTDIR}${DATADIR}/applications
+	@rm -f ${DESTDIR}${DATADIR}/applications/${PACKAGE}.desktop
+	@echo removing colorscheme files from ${DESTDIR}${DATADIR}/${PACKAGE}
+	@rm -rf ${DESTDIR}${DATADIR}/${PACKAGE}/colorschemes/
 	@echo removing program data dir
 	@rm -rf ${DATADIR}/${PACKAGE}
 
