@@ -53,6 +53,9 @@ utils.o: utils.c
 clean:
 	@rm -rf *.o ${PACKAGE}
 
+strip: all
+	@strip --strip-all ${PACKAGE}
+
 debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 debug: clean all
 
