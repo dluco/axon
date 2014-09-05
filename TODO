@@ -1,11 +1,12 @@
 - if output-file is "-"?
 - resize method?
 - work on man page
-- seg fault after adding in autohide mouse?
 - highlight email addresses too?
 - multiple windows:
 	- closing one terminal window closes all of them...
 	- command from new window?
 	- how to handle output file?
 	- share Config and Options?
+- use "install" program in makefile instead of mkdir & cp
+	- also, use DISTFILES to organize dist-files
 - default size is not 80x24?
