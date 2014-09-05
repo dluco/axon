@@ -63,6 +63,10 @@ int main(int argc, char *argv[])
 	terminal_load_options(term, opts);
 	terminal_run(term);
 
+//	gtk_window_set_default_geometry(GTK_WINDOW(term->window),
+//			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
+//			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)));
+
 	/* Run gtk main loop */
 	gtk_main();
 

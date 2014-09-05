@@ -17,7 +17,8 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	new_window_item = gtk_image_menu_item_new_with_mnemonic("_Open Terminal");
 	copy_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_COPY, NULL);
 	paste_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_PASTE, NULL);
-	fullscreen_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_FULLSCREEN, NULL);
+//	fullscreen_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_FULLSCREEN, NULL);
+	fullscreen_item = gtk_check_menu_item_new_with_label("Fullscreen");
 	preferences_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_PREFERENCES, NULL);
 	about_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT, NULL);
 	quit_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL);
@@ -66,6 +67,9 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	/* copy_item sensitivity */
 	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(selection_changed), copy_item);
 	gtk_widget_set_sensitive(copy_item, FALSE);
+
+	/* Bookmark fullscreen_item for when -s option is specified */
+	term->fullscreen_item = fullscreen_item;
 
 	gtk_widget_show(new_window_item);
 	gtk_widget_show(copy_item);

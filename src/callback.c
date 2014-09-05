@@ -120,6 +120,64 @@ void char_size_realized(GtkWidget *widget, gpointer data)
 				      GDK_HINT_MIN_SIZE);
 }
 
+void iconify_window(GtkWidget *widget, gpointer data)
+{
+	gtk_window_iconify(data);
+}
+
+void deiconify_window(GtkWidget *widget, gpointer data)
+{
+	gtk_window_deiconify(data);
+}
+
+void raise_window(GtkWidget *widget, gpointer data)
+{
+	GdkWindow *window;
+
+	if (GTK_IS_WIDGET(data)) {
+		window = gtk_widget_get_window(GTK_WIDGET(data));
+		if (window) {
+			gdk_window_raise(window);
+		}
+	}
+}
+
+void lower_window(GtkWidget *widget, gpointer data)
+{
+	GdkWindow *window;
+
+	if (GTK_IS_WIDGET(data)) {
+		window = gtk_widget_get_window(GTK_WIDGET(data));
+		if (window) {
+			gdk_window_lower(window);
+		}
+	}
+}
+
+void maximize_window(GtkWidget *widget, gpointer data)
+{
+	GdkWindow *window;
+
+	if (GTK_IS_WIDGET(data)) {
+		window = gtk_widget_get_window(GTK_WIDGET(data));
+		if (window) {
+			gdk_window_maximize(window);
+		}
+	}
+}
+
+void restore_window(GtkWidget *widget, gpointer data)
+{
+	GdkWindow *window;
+
+	if (GTK_IS_WIDGET(data)) {
+		window = gtk_widget_get_window(GTK_WIDGET(data));
+		if (window) {
+			gdk_window_unmaximize(window);
+		}
+	}
+}
+
 void refresh_window(GtkWidget *widget, gpointer data)
 {
 	GdkWindow *window;
@@ -166,6 +224,62 @@ void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
 		gtk_window_resize(GTK_WINDOW(data), width + owidth, height + oheight);
 		gtk_border_free (inner_border);
 	}
+}
+
+void move_window(GtkWidget *widget, guint x, guint y, gpointer data)
+{
+	GdkWindow *window;
+
+	if (GTK_IS_WIDGET(data)) {
+		window = gtk_widget_get_window(GTK_WIDGET(data));
+		if (window) {
+			gdk_window_move(window, x, y);
+		}
+	}
+}
+
+void adjust_font_size(GtkWidget *terminal, GtkWidget *window, gint howmuch)
+{
+	VteTerminal *vte;
+	PangoFontDescription *desired;
+	gint newsize;
+	gint old_columns, old_rows, owidth, oheight;
+
+	/* Read the screen dimensions in cells. */
+	vte = VTE_TERMINAL(terminal);
+	old_columns = vte->column_count;
+	old_rows = vte->row_count;
+
+	/* Take into account padding and border overhead. */
+	gtk_window_get_size(GTK_WINDOW(window), &owidth, &oheight);
+	owidth -= vte->char_width * vte->column_count;
+	oheight -= vte->char_height * vte->row_count;
+
+	/* Calculate the new font size. */
+	desired = pango_font_description_copy(vte_terminal_get_font(vte));
+	newsize = pango_font_description_get_size(desired) / PANGO_SCALE;
+	newsize += howmuch;
+	pango_font_description_set_size(desired,
+					CLAMP(newsize, 4, 144) * PANGO_SCALE);
+
+	/* Change the font, then resize the window so that we have the same
+	 * number of rows and columns. */
+	vte_terminal_set_font(vte, desired);
+	gtk_window_resize(GTK_WINDOW(window),
+			  old_columns * vte->char_width + owidth,
+			  old_rows * vte->char_height + oheight);
+
+	pango_font_description_free(desired);
+}
+
+void increase_font_size(GtkWidget *terminal, GtkWidget *window)
+{
+	adjust_font_size(terminal, window, 1);
+}
+
+void decrease_font_size(GtkWidget *terminal, GtkWidget *window)
+{
+	adjust_font_size(terminal, window, -1);
 }
 
 void selection_changed(GtkWidget *terminal, GtkWidget *widget)

@@ -51,7 +51,7 @@ void terminal_init(Terminal *term)
 
 	/* FIXME: there must be a better way to handle resizing... */
 	/* *************************************************** */
-	/* Connect to the "char-size" changed signal to set geometry hints
+	/* Connect to the "char-size-changed" signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
 	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
 	g_signal_connect(G_OBJECT(term->vte), "char-size-changed",
@@ -66,15 +66,36 @@ void terminal_init(Terminal *term)
 			G_CALLBACK(set_title), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "child-exited",
 			G_CALLBACK(child_exited), term);
+
+	g_signal_connect(G_OBJECT(term->vte), "iconify-window",
+			G_CALLBACK(iconify_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "deiconify-window",
+			G_CALLBACK(deiconify_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "raise-window",
+			G_CALLBACK(raise_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "lower-window",
+			G_CALLBACK(lower_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "maximize-window",
+			G_CALLBACK(maximize_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "restore-window",
+			G_CALLBACK(restore_window), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "refresh-window",
 			G_CALLBACK(refresh_window), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "resize-window",
 			G_CALLBACK(resize_window), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "move-window",
+			G_CALLBACK(move_window), term->window);
+
+	/* Connect to font tweakage */
+	g_signal_connect(G_OBJECT(term->vte), "increase-font-size",
+			G_CALLBACK(increase_font_size), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "decrease-font-size",
+			G_CALLBACK(decrease_font_size), term->window);
 
 //	gtk_widget_realize(term->vte);
-	gtk_window_set_default_size(GTK_WINDOW(term->window),
-			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
-			vte_terminal_get_row_count(VTE_TERMINAL(term->vte)));
+//	gtk_window_set_default_size(GTK_WINDOW(term->window),
+//			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
+//			vte_terminal_get_row_count(VTE_TERMINAL(term->vte)));
 
 	/* make elements visible */
 	gtk_widget_show(term->vte);
@@ -138,13 +159,13 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 	
 	if (opts->font) {
-//		term->conf->font = pango_font_description_from_string(opts->font);
 		term->conf->font = g_strdup(opts->font);
 	}
 
 	/* mutually exclusive options, obviously */
 	if (opts->fullscreen) {
-		fullscreen(NULL, term);
+		/* Correctly set state of menu item */
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item), TRUE);
 	} else if (opts->maximize) {
 		gtk_window_maximize(GTK_WINDOW(term->window));
 	} else if (opts->geometry) {
