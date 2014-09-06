@@ -54,6 +54,13 @@ void child_exited(GtkWidget *terminal, Terminal *term)
 	destroy(term);
 }
 
+/* Required when using multiple terminals */
+void eof(GtkWidget *terminal, Terminal *term)
+{
+	/* TODO: perform a waitpid on term's child */
+	destroy(term);
+}
+
 void set_title(GtkWidget *terminal, GtkWidget *window)
 {
 	gtk_window_set_title(GTK_WINDOW(window), vte_terminal_get_window_title(VTE_TERMINAL(terminal)));
@@ -118,124 +125,6 @@ void char_size_realized(GtkWidget *widget, gpointer data)
 				      GDK_HINT_RESIZE_INC |
 				      GDK_HINT_BASE_SIZE |
 				      GDK_HINT_MIN_SIZE);
-}
-
-void iconify_window(GtkWidget *widget, gpointer data)
-{
-	gtk_window_iconify(data);
-}
-
-void deiconify_window(GtkWidget *widget, gpointer data)
-{
-	gtk_window_deiconify(data);
-}
-
-void raise_window(GtkWidget *widget, gpointer data)
-{
-	GdkWindow *window;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(GTK_WIDGET(data));
-		if (window) {
-			gdk_window_raise(window);
-		}
-	}
-}
-
-void lower_window(GtkWidget *widget, gpointer data)
-{
-	GdkWindow *window;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(GTK_WIDGET(data));
-		if (window) {
-			gdk_window_lower(window);
-		}
-	}
-}
-
-void maximize_window(GtkWidget *widget, gpointer data)
-{
-	GdkWindow *window;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(GTK_WIDGET(data));
-		if (window) {
-			gdk_window_maximize(window);
-		}
-	}
-}
-
-void restore_window(GtkWidget *widget, gpointer data)
-{
-	GdkWindow *window;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(GTK_WIDGET(data));
-		if (window) {
-			gdk_window_unmaximize(window);
-		}
-	}
-}
-
-void refresh_window(GtkWidget *widget, gpointer data)
-{
-	GdkWindow *window;
-	GtkAllocation allocation;
-	GdkRectangle rect;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(widget);
-		if (window) {
-			gtk_widget_get_allocation(widget, &allocation);
-			rect.x = rect.y = 0;
-			rect.width = allocation.width;
-			rect.height = allocation.height;
-			gdk_window_invalidate_rect(window, &rect, TRUE);
-		}
-	}
-}
-
-void resize_window(GtkWidget *widget, guint width, guint height, gpointer data)
-{
-	VteTerminal *terminal;
-
-	if ((GTK_IS_WINDOW(data)) && (width >= 2) && (height >= 2)) {
-		gint owidth, oheight, char_width, char_height, column_count, row_count;
-		GtkBorder *inner_border;
-
-		terminal = VTE_TERMINAL(widget);
-
-		gtk_window_get_size(GTK_WINDOW(data), &owidth, &oheight);
-
-		/* Take into account border overhead. */
-		char_width = vte_terminal_get_char_width (terminal);
-		char_height = vte_terminal_get_char_height (terminal);
-		column_count = vte_terminal_get_column_count (terminal);
-		row_count = vte_terminal_get_row_count (terminal);
-		gtk_widget_style_get (widget, "inner-border", &inner_border, NULL);
-
-		owidth -= char_width * column_count;
-		oheight -= char_height * row_count;
-		if (inner_border != NULL) {
-			owidth -= inner_border->left + inner_border->right;
-			oheight -= inner_border->top + inner_border->bottom;
-		}
-		gtk_window_resize(GTK_WINDOW(data), width + owidth, height + oheight);
-		gtk_border_free (inner_border);
-	}
-}
-
-void move_window(GtkWidget *widget, guint x, guint y, gpointer data)
-{
-	GdkWindow *window;
-
-	if (GTK_IS_WIDGET(data)) {
-		window = gtk_widget_get_window(GTK_WIDGET(data));
-		if (window) {
-			gdk_window_move(window, x, y);
-		}
-	}
 }
 
 void adjust_font_size(GtkWidget *terminal, GtkWidget *window, gint howmuch)

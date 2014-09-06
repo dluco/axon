@@ -10,20 +10,15 @@
 #include "options.h"
 #include "utils.h"
 
-static void init(Options *opts, Config *conf)
+static void init(void)
 {
 	setlocale(LC_ALL, "");
 
 	/* set TERM env-variable? */
 
-	config_init(conf);
-	
-	/* Load configuration file */
-	config_load(conf, opts->config_file);
-
+	g_set_application_name(PACKAGE);
 	/* Set default window icon for all windows */
 	gtk_window_set_default_icon_name("terminal");
-	g_set_application_name(PACKAGE);
 }
 
 static void cleanup(Options *opts, Config *conf)
@@ -51,9 +46,12 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	conf = config_new();
+	config_init(conf);
+	/* Load configuration file */
+	config_load(conf, opts->config_file);
 	
 	/* Perform init of program */
-	init(opts, conf);
+	init();
 
 	/* Initialize terminal instance */
 	term = terminal_new();
@@ -66,6 +64,9 @@ int main(int argc, char *argv[])
 //	gtk_window_set_default_geometry(GTK_WINDOW(term->window),
 //			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
 //			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)));
+
+	gtk_widget_show_all(term->window);
+	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 
 	/* Run gtk main loop */
 	gtk_main();
