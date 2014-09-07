@@ -8,6 +8,8 @@
 #include "menu.h"
 #include "utils.h"
 
+extern GSList *terminals;
+
 Terminal *terminal_new(void)
 {
 	Terminal *term;
@@ -28,7 +30,7 @@ void terminal_init(Terminal *term)
 	term->vte = vte_terminal_new();
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 
-	/* set state variables */
+	/* set state variables etc */
 	term->fullscreen = FALSE;
 
 	/* setup */
@@ -43,8 +45,8 @@ void terminal_init(Terminal *term)
 	
 	/* signal setup */
 	g_signal_connect(G_OBJECT(term->window), "delete-event",
-			G_CALLBACK(delete_event), NULL);
-	g_signal_connect(G_OBJECT(term->window), "destroy",
+			G_CALLBACK(delete_event), term);
+	g_signal_connect_swapped(G_OBJECT(term->window), "destroy",
 			G_CALLBACK(destroy_window), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event",
 			G_CALLBACK(key_press), term);
@@ -69,6 +71,9 @@ void terminal_init(Terminal *term)
 			G_CALLBACK(increase_font_size), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "decrease-font-size",
 			G_CALLBACK(decrease_font_size), term->window);
+
+	/* Add newly init-ed terminal to list */
+	terminals = g_slist_append(terminals, term);
 }
 
 void terminal_load_config(Terminal *term, Config *conf)
@@ -145,6 +150,12 @@ void terminal_load_options(Terminal *term, Options *opts)
 		print_err("invalid geometry format\n");
 	}
 	g_free(geometry);
+
+	if (term->opts->output_file) {
+		g_object_set_data(G_OBJECT(term->vte), "output_file", term->opts->output_file);
+		/* Reset for new windows - only the first window will be outputted to file */
+		term->opts->output_file = NULL;
+	}
 }
 
 void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
@@ -243,6 +254,9 @@ void terminal_run(Terminal *term)
 			if (!g_shell_parse_argv(term->opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
 				die("%s\n", gerror->message);
 			}
+			/* Reset for new windows */
+			g_free(term->opts->execute);
+			term->opts->execute = FALSE;
 		} else {
 			/* -e option - last in commandline, scoops up rest of arguments */
 			if (term->opts->xterm_args) {
@@ -252,6 +266,9 @@ void terminal_run(Terminal *term)
 				}
 				g_free(cmd_joined);
 			}
+			/* Reset for new windows */
+			g_strfreev(term->opts->xterm_args);
+			term->opts->xterm_execute = FALSE;
 		}
 
 		/* Check for a valid command */
@@ -270,11 +287,10 @@ void terminal_run(Terminal *term)
 			}
 			g_free(path);
 			g_strfreev(cmd_argv);
-			//g_strfreev(term->opts->xterm_execute_args);
 		}
 	} else { 
 		/* No execute option */
-		if (term->opts->hold) { /* FIXME: is this necessary? */
+		if (term->opts->hold) {
 			print_err("hold option given without any command\n");
 			term->opts->hold = FALSE;
 		}
@@ -299,4 +315,10 @@ void terminal_run(Terminal *term)
 		g_free(fork_argv[0]);
 		g_free(fork_argv[1]);
 	}
+}
+
+void terminal_show(Terminal *term)
+{
+	gtk_widget_show_all(term->window);
+	(term->conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 }

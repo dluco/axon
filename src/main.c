@@ -10,6 +10,8 @@
 #include "options.h"
 #include "utils.h"
 
+GSList *terminals = NULL;
+
 static void init(void)
 {
 	setlocale(LC_ALL, "");
@@ -41,10 +43,6 @@ int main(int argc, char *argv[])
 	opts = options_new();
 	options_parse(opts, argc, argv);
 
-	/* Initialize gtk+ */
-	/* FIXME: move to options_parse? */
-	gtk_init(&argc, &argv);
-
 	conf = config_new();
 	config_init(conf);
 	/* Load configuration file */
@@ -61,12 +59,7 @@ int main(int argc, char *argv[])
 	terminal_load_options(term, opts);
 	terminal_run(term);
 
-//	gtk_window_set_default_geometry(GTK_WINDOW(term->window),
-//			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)),
-//			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)));
-
-	gtk_widget_show_all(term->window);
-	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+	terminal_show(term);
 
 	/* Run gtk main loop */
 	gtk_main();

@@ -1,10 +1,6 @@
 - if output-file is "-"?
 - work on man page
 - highlight email addresses too?
-- multiple windows:
-	- closing one terminal window closes all of them...
-	- command from new window?
-	- how to handle output file?
-	- share Config and Options?
-- use "install" program in makefile instead of mkdir & cp
-	- also, use DISTFILES to organize dist-files
+- options menu:
+	- font
+	- colorscheme

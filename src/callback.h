@@ -2,8 +2,8 @@
 #define CALLBACK_H
 
 void destroy(Terminal *);
-gboolean delete_event(GtkWidget *, GdkEvent *, gpointer);
-void destroy_window(GtkWidget *, Terminal *);
+gboolean delete_event(GtkWidget *, GdkEvent *, Terminal *);
+void destroy_window(Terminal *);
 void child_exited(GtkWidget *, Terminal *);
 void eof(GtkWidget *, Terminal *);
 void set_title(GtkWidget *, GtkWidget *);

@@ -90,6 +90,10 @@ void options_parse(Options *opts, int argc, char *argv[])
 		die("%s\n", gerror->message);
 	}
 	g_option_context_free(context);
+
+	/* Initialize GTK+ */
+	gtk_init(&t_argc, &t_argv);
+
 	g_strfreev(t_argv);
 
 	/* Print version info and exit */

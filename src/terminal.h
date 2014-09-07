@@ -25,5 +25,6 @@ void terminal_load_config(Terminal *, Config *);
 void terminal_load_options(Terminal *, Options *);
 void terminal_load_color_scheme(Terminal *, const char *);
 void terminal_run(Terminal *);
+void terminal_show(Terminal *);
 
 #endif /* TERMINAL_H */

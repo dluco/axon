@@ -2,17 +2,17 @@
 #define OPTIONS_H
 
 typedef struct options {
-	const char *font;
-	const char *work_dir;
-	const char *execute;
+	char *font;
+	char *work_dir;
+	char *execute;
 	gchar **xterm_args;
 	gboolean xterm_execute;
 	gboolean version;
 	gint login;
-	const char *title;
+	char *title;
 	int rows, columns;
 	gboolean hold;
-	const char *geometry;
+	char *geometry;
 	char *config_file;
 	char *output_file;
 	gboolean fullscreen;

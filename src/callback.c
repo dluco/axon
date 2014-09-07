@@ -1,3 +1,4 @@
+#include <sys/wait.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <vte/vte.h>
@@ -7,14 +8,23 @@
 #include "dialog.h"
 #include "utils.h"
 
+extern GSList *terminals;
+
 void destroy(Terminal *term)
 {
+	char *output_file;
 	GFile *file;
 	GOutputStream *stream;
 	GError *gerror = NULL;
 
-	if (term->opts->output_file) {
-		file = g_file_new_for_commandline_arg(term->opts->output_file);
+	/* Remove terminal from list */
+	terminals = g_slist_remove(terminals, term);
+
+	/* Check if terminal has an output file attached */
+	output_file = g_object_get_data(G_OBJECT(term->vte), "output_file");
+
+	if (output_file) {
+		file = g_file_new_for_commandline_arg(output_file);
 		/* Open a new output stream for overwriting the file - NO backup is made */
 		stream = G_OUTPUT_STREAM(g_file_replace(file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
 
@@ -33,42 +43,74 @@ void destroy(Terminal *term)
 		g_object_unref(file);
 	}
 
-//	gtk_widget_destroy(term->window);
-	/* TODO: remove for multiple windows */
-	gtk_main_quit();
+	
+	/* Check for empty list */
+	if (terminals == NULL) {
+		gtk_main_quit();
+	} else {
+		/* List not empty, so just destroy window */
+		gtk_widget_destroy(term->window);
+	}
 }
 
-gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
 {
+	gint response;
+	pid_t pgid;
+	
+	/* TODO: Check if there are running processes */
+	
+	pgid = tcgetpgrp(vte_terminal_get_pty(VTE_TERMINAL(term->vte)));
+
+	/* If running processes are found, ask before proceeding */
+	if (pgid != -1 && pgid != term->pid) {
+		response = dialog_message_question(term->window,
+				"There are still processes running in this terminal. Do you really want to close?");
+
+		if (response == GTK_RESPONSE_YES) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
+	}
+
 	return FALSE;	
 }
 
-void destroy_window(GtkWidget *widget, Terminal *term)
+void destroy_window(Terminal *term)
 {
 	destroy(term);
 }
 
 void child_exited(GtkWidget *terminal, Terminal *term)
 {
+	int status;
+
 	if (term->opts->hold) {
 		/* Hold option activated */
 		return;
 	}
 
-	/* TODO: perform a waitpid on term's child */
-	destroy(term);
+	waitpid(term->pid, &status, WNOHANG);
+	/* TODO: check wait return */
+
+	destroy_window(term);
 }
 
 /* Required when using multiple terminals */
 void eof(GtkWidget *terminal, Terminal *term)
 {
+	int status;
+
 	if (term->opts->hold) {
 		/* Hold option activated */
 		return;
 	}
 	
-	/* TODO: perform a waitpid on term's child */
-	destroy(term);
+	waitpid(term->pid, &status, WNOHANG);
+	/* TODO: check wait return */
+
+	destroy_window(term);
 }
 
 void set_title(GtkWidget *terminal, GtkWidget *window)
@@ -195,16 +237,22 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 		return FALSE;
 	}
 	
-	/* find out if the cursor was over a matched expression */
+	/* find out if the cursor was over a matched expression 
 	column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
 	row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
 	term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
-
+*/
 	switch(event->button) {
 	case 1:
+		/* find out if the cursor was over a matched expression */
+		column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
+		row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
+		term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
+
 		/* open url if any */
 		if (term->match != NULL) {
 			open_url(NULL, term->match);
+			g_free(term->match);
 			return TRUE;
 		}
 		break;
@@ -245,6 +293,7 @@ void new_window(GtkWidget *widget, Terminal *term)
 	terminal_load_config(n_term, term->conf);
 	terminal_load_options(n_term, term->opts);
 	terminal_run(n_term);
+	terminal_show(n_term);
 }
 
 void copy_text(GtkWidget *widget, Terminal *term)
