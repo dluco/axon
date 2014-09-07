@@ -50,6 +50,11 @@ void destroy_window(GtkWidget *widget, Terminal *term)
 
 void child_exited(GtkWidget *terminal, Terminal *term)
 {
+	if (term->opts->hold) {
+		/* Hold option activated */
+		return;
+	}
+
 	/* TODO: perform a waitpid on term's child */
 	destroy(term);
 }
@@ -57,6 +62,11 @@ void child_exited(GtkWidget *terminal, Terminal *term)
 /* Required when using multiple terminals */
 void eof(GtkWidget *terminal, Terminal *term)
 {
+	if (term->opts->hold) {
+		/* Hold option activated */
+		return;
+	}
+	
 	/* TODO: perform a waitpid on term's child */
 	destroy(term);
 }
