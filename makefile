@@ -20,6 +20,10 @@ clean:
 	@rm -rf ${PACKAGE} ${PACKAGE}-${VERSION}/ ${PACKAGE}-${VERSION}.tar.gz
 	@${MAKE} -C src/ clean
 
+strip: all
+	@echo striping executable
+	@${MAKE} -C src/ strip
+
 debug:
 	@echo making debug build
 	@${MAKE} -C src/ debug
