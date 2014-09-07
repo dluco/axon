@@ -67,7 +67,7 @@ void config_load(Config *conf, char *user_file)
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
 
-	config_dir = g_build_filename(g_get_user_config_dir(), PACKAGE, NULL);
+	config_dir = g_build_filename(g_get_user_config_dir(), "axon", NULL);
 	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
 		/* ~/.config does not exist - create it */
 		g_mkdir(g_get_user_config_dir(), 0755);

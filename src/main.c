@@ -16,7 +16,7 @@ static void init(void)
 
 	/* set TERM env-variable? */
 
-	g_set_application_name(PACKAGE);
+	g_set_application_name("axon");
 	/* Set default window icon for all windows */
 	gtk_window_set_default_icon_name("terminal");
 }

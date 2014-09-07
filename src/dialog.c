@@ -9,7 +9,7 @@ void dialog_preferences(Terminal *term)
 	GtkWidget *vbox;
 	GtkWidget *font_button;
 
-	GtkWidget* dialog = gtk_dialog_new_with_buttons(PACKAGE" settings",
+	GtkWidget* dialog = gtk_dialog_new_with_buttons("axon settings",
 			GTK_WINDOW(term->window), GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
 	
@@ -55,7 +55,7 @@ void dialog_about(void)
 	GtkIconTheme *theme = gtk_icon_theme_get_default();
 	
 	/* set name, version, and comments */
-	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), PACKAGE);
+	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "axon");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), VERSION);
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "A simple terminal emulator");
 

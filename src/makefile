@@ -1,22 +1,22 @@
-PACKAGE ?= axon
+OUT = axon
 VERSION ?= 0.0
 DATADIR ?= /usr/share
 
-DEFINES=-DVERSION=\"${VERSION}\" -DPACKAGE=\"${PACKAGE}\" \
-	-DDATADIR=\"${DATADIR}\"
+SRC = $(wildcard *.c)
+OBJ = $(SRC:.c=.o)
 
-CC=gcc
-PKGDEPS=gtk+-2.0 vte
-CFLAGS=-c -Wall -O2 -flto $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-LDFLAGS=-O2 -flto $(shell pkg-config --libs ${PKGDEPS})
+DEFINES := -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\"
 
-OBJ=callback.o config.o dialog.o main.o menu.o options.o terminal.o utils.o
+CC = gcc
+PKGDEPS = gtk+-2.0 vte
+CFLAGS := -c -Wall -O2 -flto $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
+LDFLAGS := -O2 -flto $(shell pkg-config --libs ${PKGDEPS})
 
 all: axon
 
 axon: $(OBJ)
-	@echo $(CC) -o ${PACKAGE}
-	@$(CC) $(OBJ) $(LDFLAGS) -o ${PACKAGE}
+	@echo $(CC) -o ${OUT}
+	@$(CC) $(OBJ) $(LDFLAGS) -o ${OUT}
 
 callback.o: callback.c
 	@echo $(CC) -c callback.c
@@ -51,12 +51,12 @@ utils.o: utils.c
 	@$(CC) $(CFLAGS) utils.c
 
 clean:
-	@rm -rf *.o ${PACKAGE}
+	@${RM} ${OUT} ${OBJ}
 
 strip: all
-	@strip --strip-all ${PACKAGE}
+	@strip --strip-all ${OUT}
 
-debug: CFLAGS=-c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
+debug: CFLAGS := -c -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 debug: clean all
 
-.PHONY: all clean debug
+.PHONY: all clean debug strip

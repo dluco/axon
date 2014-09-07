@@ -3,8 +3,8 @@
 
 #define HTTP_REGEX "(((ftp|http)s?://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?"
 #define DEFAULT_WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
-#define DEFAULT_CONFIG_FILE PACKAGE"rc"
-#define CFG_GROUP PACKAGE
+#define DEFAULT_CONFIG_FILE "axonrc"
+#define CFG_GROUP "axon"
 #define DEFAULT_COLUMNS 80
 #define DEFAULT_ROWS 24
 #define DEFAULT_FONT "Monospace, 11"

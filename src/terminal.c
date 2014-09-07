@@ -168,7 +168,7 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 	cfg = g_key_file_new();
 
 	tmp = g_strdup_printf("%s.%s", color_scheme, "theme");
-	scheme_file = g_build_filename(DATADIR, PACKAGE, "colorschemes", tmp, NULL);
+	scheme_file = g_build_filename(DATADIR, "axon", "colorschemes", tmp, NULL);
 	g_free(tmp);
 
 	/* Open config file */
