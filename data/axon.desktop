@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=0.0
-Name=axon
-Comment=Simple terminal emulator
+Name=Axon
+Comment=Lightweight terminal emulator
 GenericName=Terminal Emulator
 Exec=axon
 Icon=utilities-terminal

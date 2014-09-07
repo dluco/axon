@@ -212,13 +212,12 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 			vte_terminal_set_colors(VTE_TERMINAL(term->vte),
 					has_fg ? &fg : NULL, has_bg ? &bg : NULL,
 					palette, PALETTE_SIZE);
-		} else if (has_fg || has_bg) {
-			/* No palette but foreground and/or background colors */
+		} else {
+			/* No palette - set default colors */
+			vte_terminal_set_default_colors(VTE_TERMINAL(term->vte));
+			/* Apply fore/background colors if present */
 			vte_terminal_set_color_foreground(VTE_TERMINAL(term->vte), has_fg ? &fg : NULL);
 			vte_terminal_set_color_background(VTE_TERMINAL(term->vte), has_bg ? &bg : NULL);
-		} else {
-			/* No palette or colors - set default colors */
-			vte_terminal_set_default_colors(VTE_TERMINAL(term->vte));
 		}
 
 		/* Apply cursor color */
