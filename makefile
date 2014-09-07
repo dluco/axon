@@ -3,10 +3,12 @@
 
 export # Export all variables to sub-makes
 
-PACKAGE=axon
-VERSION=0.0
+PACKAGE = axon
+VERSION = 0.0
 
-DATADIR=/usr/share
+DISTFILES = AUTHORS LICENSE makefile README TODO colorschemes/ data/ src/
+
+DATADIR = /usr/share
 
 all: axon
 
@@ -31,21 +33,17 @@ debug:
 dist: clean
 	@echo creating dist tarball
 	@mkdir -p ${PACKAGE}-${VERSION}/
-	@cp -r AUTHORS LICENSE makefile README TODO \
-		colorschemes/ data/ src/ ${PACKAGE}-${VERSION}/
+	@cp -r ${DISTFILES} ${PACKAGE}-${VERSION}/
 	@tar -czf ${PACKAGE}-${VERSION}.tar.gz ${PACKAGE}-${VERSION}/
 	@rm -rf ${PACKAGE}-${VERSION}/
 
 install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f src/${PACKAGE} ${DESTDIR}${PREFIX}/bin
-	@chmod 755 ${DESTDIR}${PREFIX}/bin/${PACKAGE}
+	@install -D -m755 src/${PACKAGE} ${DESTDIR}${PREFIX}/bin/${PACKAGE}
 	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
-	@mkdir -p ${DESTDIR}${DATADIR}/applications
-	@cp -f data/${PACKAGE}.desktop ${DESTDIR}${DATADIR}/applications/
+	@install -D -m644 data/${PACKAGE}.desktop ${DESTDIR}${DATADIR}/applications/${PACKAGE}.desktop
 	@echo installing colorscheme files to ${DESTDIR}${DATADIR}/${PACKAGE}
-	@mkdir -p ${DESTDIR}${DATADIR}/${PACKAGE}
+	@mkdir -p ${DESTDIR}${DATADIR}/${PACKAGE}/
 	@cp -rf colorschemes/ ${DESTDIR}${DATADIR}/${PACKAGE}/
 	@echo run "make uninstall" to remove
 
