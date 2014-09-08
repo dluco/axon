@@ -3,4 +3,12 @@
 - highlight email addresses too?
 - options menu:
 	- font (DONE)
-	- colorscheme
+	- colorscheme: sort?
+- hanging for a moment after closing?
+- palette menu:
+	- sorting works for names, not files?
+- keybindings:
+	- Ctrl+Shift+c = copy
+	- Ctrl+Shift+p = paste
+	- F11 = fullscreen
+	- Ctrl+Shift+q = close window (emit "delete-event" signal?)

@@ -53,10 +53,12 @@ gchar **color_get_palette_names(void)
 	int i, j, n;
 
 	palette_files = color_get_palette_files();
+//	sort_string_array(palette_files);
 
 	n = g_strv_length(palette_files);
 
-	palette_names = malloc(sizeof(*palette_names) * n);
+	/* Over-allocate by 1 to leave room for NULL */
+	palette_names = malloc(sizeof(*palette_names) * (n + 1));
 
 	cfg = g_key_file_new();
 	
@@ -77,6 +79,8 @@ gchar **color_get_palette_names(void)
 
 		g_free(path);
 	}
+	/* NULL-terminate array */
+	palette_names[n] = NULL;
 //	sort_string_array(palette_names);
 
 	g_key_file_free(cfg);
