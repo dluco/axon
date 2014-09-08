@@ -22,6 +22,10 @@ callback.o: callback.c
 	@echo $(CC) -c callback.c
 	@$(CC) $(CFLAGS) callback.c
 
+color.o: color.c
+	@echo $(CC) -c color.c
+	@$(CC) $(CFLAGS) color.c
+
 config.o: config.c
 	@echo $(CC) -c config.c
 	@$(CC) $(CFLAGS) config.c

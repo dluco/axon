@@ -317,6 +317,11 @@ void terminal_run(Terminal *term)
 	}
 }
 
+void terminal_set_font(Terminal *term, char *font)
+{
+	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), font);
+}
+
 void terminal_show(Terminal *term)
 {
 	gtk_widget_show_all(term->window);
