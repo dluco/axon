@@ -122,7 +122,7 @@ void config_load(Config *conf, char *user_file)
 		config_set_value(conf, "color_scheme", DEFAULT_COLOR_SCHEME);
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
-	conf->color_scheme = g_strdup(tmp);
+	conf->palette = g_strdup(tmp);
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {

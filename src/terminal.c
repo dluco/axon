@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+#include <glib/gstdio.h>
 
 #include "terminal.h"
 #include "callback.h"
@@ -86,7 +87,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	
-	terminal_load_color_scheme(term, conf->color_scheme);
+	terminal_set_palette(term, conf->palette);
 
 	/* Scroll-related stuff */
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
@@ -158,7 +159,7 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 }
 
-void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
+void terminal_set_palette(Terminal *term, char *palette_name)
 {
 	GKeyFile *cfg;
 	GdkColor fg;
@@ -169,7 +170,7 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 	gboolean has_bg = FALSE;
 	gboolean has_cursor = FALSE;
 	gboolean valid_palette = FALSE;
-	gchar *scheme_file;
+	gchar *palette_file;
 	gchar **palette_colors;
 	gchar *tmp;
 	int n = 0;
@@ -178,18 +179,18 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 	/* Config file initialization */
 	cfg = g_key_file_new();
 
-	tmp = g_strdup_printf("%s.%s", color_scheme, "theme");
-	scheme_file = g_build_filename(DATADIR, "axon", "colorschemes", tmp, NULL);
+	tmp = g_strdup_printf("%s.%s", palette_name, "theme");
+	palette_file = g_build_filename(DATADIR, "axon", "colorschemes", tmp, NULL);
 	g_free(tmp);
 
 	/* Open config file */
-	if (!g_key_file_load_from_file(cfg, scheme_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
-		/* color scheme file not found - default terminal colors will be used */
-		print_err("color scheme \"%s\": %s\n", color_scheme, gerror->message);
+	if (!g_key_file_load_from_file(cfg, palette_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+		/* palette file not found - default terminal colors will be used */
+		print_err("palette \"%s\": %s\n", palette, gerror->message);
 		g_error_free(gerror);
 		gerror = NULL;
 	} else {
-		/* Begin parsing scheme file */
+		/* Begin parsing palette file */
 		if ((tmp = g_key_file_get_value(cfg, "scheme", "color_foreground", NULL))) {
 			has_fg = gdk_color_parse(tmp, &fg);
 			g_free(tmp);
@@ -236,10 +237,10 @@ void terminal_load_color_scheme(Terminal *term, const char *color_scheme)
 	}
 
 	g_key_file_free(cfg);
-	g_free(scheme_file);
+	g_free(palette_file);
 }
 
-void terminal_run(Terminal *term)
+void terminal_run(Terminal *term, char *cwd)
 {
 	int cmd_argc = 0;
 	char **cmd_argv;
@@ -247,6 +248,10 @@ void terminal_run(Terminal *term)
 	char *fork_argv[3];
 	GError *gerror = NULL;
 	char *path;
+
+	if (!cwd) {
+		cwd = g_get_current_dir();
+	}
 
 	if (term->opts->execute || term->opts->xterm_execute) {
 		if (term->opts->execute) {
@@ -309,7 +314,7 @@ void terminal_run(Terminal *term)
 		fork_argv[2] = NULL;
 
 		vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
-				NULL, fork_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_FILE_AND_ARGV_ZERO,
+				cwd, fork_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_FILE_AND_ARGV_ZERO,
 				NULL, NULL, &term->pid, NULL);
 		
 		g_free(fork_argv[0]);
@@ -325,5 +330,46 @@ void terminal_set_font(Terminal *term, char *font)
 void terminal_show(Terminal *term)
 {
 	gtk_widget_show_all(term->window);
-	(term->conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+	(term->conf->show_scrollbar) ?
+			gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+}
+
+/* Retrieve the cwd of the specified term page.
+ * Original function was from terminal-screen.c of gnome-terminal, copyright (C) 2001 Havoc Pennington
+ * Adapted by Hong Jen Yee, non-linux stuff removed by David Gómez */
+char *terminal_get_cwd(Terminal *term)
+{
+	char *cwd = NULL;
+
+	if (term->pid >= 0) {
+		char *file, *buf;
+		struct stat sb;
+		int len;
+
+		file = g_strdup_printf ("/proc/%d/cwd", term->pid);
+
+		if (g_stat(file, &sb) == -1) {
+			g_free(file);
+			return cwd;
+		}
+
+		buf = malloc(sb.st_size + 1);
+
+		if(buf == NULL) {
+			g_free(file);
+			return cwd;
+		}
+
+		len = readlink(file, buf, sb.st_size + 1);
+
+		if (len > 0 && buf[0] == '/') {
+			buf[len] = '\0';
+			cwd = g_strdup(buf);
+		}
+
+		g_free(buf);
+		g_free(file);
+	}
+
+	return cwd;
 }

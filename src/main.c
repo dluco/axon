@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	/* Load config THEN options - options get the last say */
 	terminal_load_config(term, conf);
 	terminal_load_options(term, opts);
-	terminal_run(term);
+	terminal_run(term, NULL);
 
 	terminal_show(term);
 

@@ -23,7 +23,7 @@ typedef struct config {
 	GKeyFile *cfg;
 	char *config_file;
 	char *font;
-	char *color_scheme;
+	char *palette;
 	int columns;
 	int rows;
 	gboolean scroll_on_output;

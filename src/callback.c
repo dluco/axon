@@ -288,12 +288,19 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 
 void new_window(GtkWidget *widget, Terminal *term)
 {
+	char *cwd;
+
 	Terminal *n_term = terminal_new();
 	terminal_init(n_term);
+	
+	cwd = terminal_get_cwd(term);
 	terminal_load_config(n_term, term->conf);
 	terminal_load_options(n_term, term->opts);
-	terminal_run(n_term);
+	
+	terminal_run(n_term, cwd);
 	terminal_show(n_term);
+
+	g_free(cwd);
 }
 
 void copy_text(GtkWidget *widget, Terminal *term)
@@ -320,6 +327,19 @@ void fullscreen(GtkWidget *widget, Terminal *term)
 void preferences(GtkWidget *widget, Terminal *term)
 {
 	dialog_font(term);
+}
+
+void palette_changed(gchar *palette_file)
+{
+	Terminal *term;
+
+	remove_suffix(palette_file, "theme");
+
+	g_slist_foreach(terminals, (GFunc)terminal_set_palette, palette_file);
+	
+	/* Get first terminal's config and update color_scheme*/
+	term = g_slist_nth_data(terminals, 0);
+	config_set_value(term->conf, "color_scheme", palette_file);
 }
 
 void open_url(GtkWidget *widget, char *match)
