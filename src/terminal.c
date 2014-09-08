@@ -228,8 +228,12 @@ void terminal_set_palette(Terminal *term, char *palette_name)
 			/* No palette - set default colors */
 			vte_terminal_set_default_colors(VTE_TERMINAL(term->vte));
 			/* Apply fore/background colors if present */
-			vte_terminal_set_color_foreground(VTE_TERMINAL(term->vte), has_fg ? &fg : NULL);
-			vte_terminal_set_color_background(VTE_TERMINAL(term->vte), has_bg ? &bg : NULL);
+			if (has_fg) {
+				vte_terminal_set_color_foreground(VTE_TERMINAL(term->vte), &fg);
+			}
+			if (has_bg) {
+				vte_terminal_set_color_background(VTE_TERMINAL(term->vte), &bg);
+			}
 		}
 
 		/* Apply cursor color */

@@ -67,15 +67,6 @@ void config_load(Config *conf, char *user_file)
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
 
-	config_dir = g_build_filename(g_get_user_config_dir(), "axon", NULL);
-	if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
-		/* ~/.config does not exist - create it */
-		g_mkdir(g_get_user_config_dir(), 0755);
-	}
-	if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
-		/* Program config dir does not exist - create it */
-		g_mkdir(config_dir, 0755);
-	}
 	if (user_file) {
 		/*
 		 * A user specified file MUST exist - otherwise, they could give a bogus
@@ -95,10 +86,20 @@ void config_load(Config *conf, char *user_file)
 			print_err("invalid config file \"%s\"\n", user_file);
 		}
 	} else {
+		config_dir = g_build_filename(g_get_user_config_dir(), "axon", NULL);
+
+		if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
+			/* ~/.config does not exist - create it */
+			g_mkdir(g_get_user_config_dir(), 0755);
+		}
+		if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
+			/* Program config dir does not exist - create it */
+			g_mkdir(config_dir, 0755);
+		}
 		conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
-	}
 		
-	g_free(config_dir);
+		g_free(config_dir);
+	}
 
 	/* Open config file */
 	if (!g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {

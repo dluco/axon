@@ -339,6 +339,8 @@ void palette_changed(gchar *palette_file)
 	
 	/* Get first terminal's config and update color_scheme*/
 	term = g_slist_nth_data(terminals, 0);
+	g_free(term->conf->palette);
+	term->conf->palette = g_strdup(palette_file);
 	config_set_value(term->conf, "color_scheme", palette_file);
 }
 
