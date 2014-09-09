@@ -9,16 +9,29 @@ axon \- simple terminal
 is a simple terminal emulator.
 .SH OPTIONS
 .TP
-.B \-v
-Display version information and exit
+.B \-v, \-\-version
+Display version information and exit.
 .TP
-.BI \-c " class"
-defines the window class (default $TERM).
+.B \-\-color-table
+Echo the color codes.
 .TP
-.BI \-f " font"
-defines the
-.I font
-to use when axon is run.
+.B \-c, \-\-config=FILE
+Config file to load instead of default (~/.config/axon/axonrc).
+.TP
+.B \-o, \-\-output=FILE
+Write the contents of terminal and scrollback to file on exit.
+.TP
+.B \-d, \-\-working-directory=DIR
+Set initial working directory.
+.TP
+.B \-x, \-\-execute
+Execute command.
+.TP
+.B \-e, \-\-xterm-execute
+Execute command.
+.TP
+.B \-f, \-\-font=FONT
+defines the font to use when axon is run.
 .TP
 .BI \-g " geometry"
 defines the X11 geometry string, which will fixate the height and width of axon. 

@@ -17,6 +17,10 @@ axon:
 # For convenience, create link to executable
 	@ln -sf src/axon axon
 
+manpage:
+	@echo generating manpage
+	@groff -Tascii -man data/axon.1 | less
+
 clean:
 	@echo cleaning
 	@${RM} ${OUT} axon-${VERSION}.tar.gz
