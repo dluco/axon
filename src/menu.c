@@ -62,12 +62,15 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	palette_menu = gtk_menu_new();
 	palette_files = color_get_palette_files();
 	palette_names = color_get_palette_names();
+	
 	for (i = 0; palette_files[i]; i++) {
 		palette_item = gtk_menu_item_new_with_label(palette_names[i]);
 		gtk_menu_shell_append(GTK_MENU_SHELL(palette_menu), palette_item);
 		g_signal_connect_swapped(G_OBJECT(palette_item), "activate",
 				G_CALLBACK(palette_changed), palette_files[i]);
 	}
+	g_strfreev(palette_names);
+
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(palette_menu_item), palette_menu);
 
 	/* set up signals */

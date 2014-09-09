@@ -3,6 +3,7 @@
 
 #include "utils.h"
 
+/* Return palette filenames (in sorted alphabetic order) */
 gchar **color_get_palette_files(void)
 {
 	gchar *path;
@@ -31,7 +32,7 @@ gchar **color_get_palette_files(void)
 		palette_files = g_strsplit(tmp_files, ";", -1);
 		
 		/* Sort array */
-//		sort_string_array(palette_files);
+		sort_string_array(palette_files);
 		
 		g_free(tmp_files);
 		g_dir_close(palette_dir);
@@ -53,8 +54,7 @@ gchar **color_get_palette_names(void)
 	int i, j, n;
 
 	palette_files = color_get_palette_files();
-//	sort_string_array(palette_files);
-
+	
 	n = g_strv_length(palette_files);
 
 	/* Over-allocate by 1 to leave room for NULL */
@@ -81,9 +81,9 @@ gchar **color_get_palette_names(void)
 	}
 	/* NULL-terminate array */
 	palette_names[n] = NULL;
-//	sort_string_array(palette_names);
 
 	g_key_file_free(cfg);
 	g_strfreev(palette_files);
+
 	return palette_names;
 }
