@@ -1,10 +1,19 @@
-axon
+Axon
 ====
 
 Lightweight terminal emulator
 
 
-dependencies
-============
+Dependencies
+------------
 
-vte-2.0 and GTK+-2.0
+Axon depends only on vte-2.0 and GTK+-2.0.
+
+Keybindings
+-----------
+
+Ctrl+Shift+N	:	Open New Window
+Ctrl+Shift+C	:	Copy Selected Text
+Ctrl+Shift+P	:	Paste Clipboard Contents
+Ctrl+Shift+Q	:	Close Window
+F11				:	Toggle Fullscreen

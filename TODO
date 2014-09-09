@@ -1,14 +1,11 @@
 - if output-file is "-"?
 - work on man page
 - highlight email addresses too?
-- options menu:
-	- font (DONE)
-	- colorscheme: sort?
 - hanging for a moment after closing?
 - palette menu:
 	- sorting works for names, not files?
 - keybindings:
-	- Ctrl+Shift+c = copy
-	- Ctrl+Shift+p = paste
-	- F11 = fullscreen
-	- Ctrl+Shift+q = close window (emit "delete-event" signal?)
+	- Ctrl+Shift+c = copy (DONE)
+	- Ctrl+Shift+p = paste (DONE)
+	- F11 = fullscreen (DONE)
+	- Ctrl+Shift+q = close window (emit "delete-event" signal?) (DONE)

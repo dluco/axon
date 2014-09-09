@@ -12,13 +12,46 @@ extern GSList *terminals;
 
 void destroy(Terminal *term)
 {
+	/* Remove terminal from list */
+	terminals = g_slist_remove(terminals, term);
+	
+	/* Check for empty list */
+	if (terminals == NULL) {
+		gtk_main_quit();
+	} else {
+		/* List not empty, so just destroy window */
+		gtk_widget_destroy(term->window);
+	}
+}
+
+gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
+{
+	gint response;
+	pid_t pgid;
+	
+	pgid = tcgetpgrp(vte_terminal_get_pty(VTE_TERMINAL(term->vte)));
+
+	/* If running processes are found, ask before proceeding */
+	if (pgid != -1 && pgid != term->pid) {
+		response = dialog_message_question(term->window,
+				"There are still processes running in this terminal. Do you really want to close?");
+
+		if (response == GTK_RESPONSE_YES) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
+	}
+
+	return FALSE;	
+}
+
+void destroy_window(Terminal *term)
+{
 	char *output_file;
 	GFile *file;
 	GOutputStream *stream;
 	GError *gerror = NULL;
-
-	/* Remove terminal from list */
-	terminals = g_slist_remove(terminals, term);
 
 	/* Check if terminal has an output file attached */
 	output_file = g_object_get_data(G_OBJECT(term->vte), "output_file");
@@ -43,42 +76,6 @@ void destroy(Terminal *term)
 		g_object_unref(file);
 	}
 
-	
-	/* Check for empty list */
-	if (terminals == NULL) {
-		gtk_main_quit();
-	} else {
-		/* List not empty, so just destroy window */
-		gtk_widget_destroy(term->window);
-	}
-}
-
-gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
-{
-	gint response;
-	pid_t pgid;
-	
-	/* TODO: Check if there are running processes */
-	
-	pgid = tcgetpgrp(vte_terminal_get_pty(VTE_TERMINAL(term->vte)));
-
-	/* If running processes are found, ask before proceeding */
-	if (pgid != -1 && pgid != term->pid) {
-		response = dialog_message_question(term->window,
-				"There are still processes running in this terminal. Do you really want to close?");
-
-		if (response == GTK_RESPONSE_YES) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
-
-	return FALSE;	
-}
-
-void destroy_window(Terminal *term)
-{
 	destroy(term);
 }
 
@@ -277,16 +274,64 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		return FALSE;
 	}
 
+	/* Check if Caps-Lock is enabled - change keyval
+	   to work with upper/lowercase. */
+	if (gdk_keymap_get_caps_lock_state(gdk_keymap_get_default())) {
+		event->keyval = gdk_keyval_to_upper(event->keyval);
+	}
+
+	/* Open new window: Ctrl+Shift+N */
+	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
+		if (event->keyval == NEW_WINDOW_KEY) {
+			new_window(term);
+			return TRUE;
+		}
+	}
+
+	/* Copy text: Ctrl+Shift+C */
+	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
+		if (event->keyval == COPY_KEY) {
+			copy_text(term);
+			return TRUE;
+		}
+	}
+
+	/* Copy text: Ctrl+Shift+V */
+	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
+		if (event->keyval == PASTE_KEY) {
+			paste_text(term);
+			return TRUE;
+		}
+	}
+
+	/* Close Window: Ctrl+Shift+Q */
+	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
+		if (event->keyval == CLOSE_WINDOW_KEY) {
+			if (!delete_event(NULL, NULL, term)) {
+				destroy_window(term);
+			}
+			return TRUE;
+		}
+	}
+
+	/* Keybindings without modifiers */
 	switch(event->keyval) {
+	case GDK_KEY_F11:
+		/* Fullscreen */
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item),
+				!term->fullscreen);
+		return TRUE;
 	case GDK_KEY_Menu:
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->keyval, event->time);
+		/* Menu popup */
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL,
+				NULL, NULL, event->keyval, event->time);
 		return TRUE;
 	}
 
 	return FALSE;
 }
 
-void new_window(GtkWidget *widget, Terminal *term)
+void new_window(Terminal *term)
 {
 	char *cwd;
 
@@ -303,12 +348,12 @@ void new_window(GtkWidget *widget, Terminal *term)
 	g_free(cwd);
 }
 
-void copy_text(GtkWidget *widget, Terminal *term)
+void copy_text(Terminal *term)
 {
 	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
 }
 
-void paste_text(GtkWidget *widget, Terminal *term)
+void paste_text(Terminal *term)
 {
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
 }
