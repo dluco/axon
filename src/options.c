@@ -41,6 +41,7 @@ void options_parse(Options *opts, int argc, char *argv[])
 	GError *gerror = NULL;
 	GOptionEntry entries[] = {
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
+		{ "color-table", 0, 0, G_OPTION_ARG_NONE, &opts->colortable, "Echo color codes", NULL },
 		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a configuration file", "FILE" },
 		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &opts->output_file, "Write terminal contents to file on exit", "FILE" },
 		{ "working-directory", 'd', 0, G_OPTION_ARG_STRING, &opts->work_dir, "Set the working directory", "DIR" },
@@ -99,6 +100,13 @@ void options_parse(Options *opts, int argc, char *argv[])
 	/* Print version info and exit */
 	if (opts->version) {
 		version();
+		exit(EXIT_SUCCESS);
+	}
+
+	/* Print out color-table and exit */
+	if (opts->colortable) {
+		colortable();
+		exit(EXIT_SUCCESS);
 	}
 
 	/* I don't care if chdir fails - continue anyways */

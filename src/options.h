@@ -8,6 +8,7 @@ typedef struct options {
 	gchar **xterm_args;
 	gboolean xterm_execute;
 	gboolean version;
+	gboolean colortable;
 	gint login;
 	char *title;
 	int rows, columns;
