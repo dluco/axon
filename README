@@ -1,4 +1,0 @@
-axon
-====
-
-Lightweight terminal emulator
