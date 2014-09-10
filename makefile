@@ -19,7 +19,9 @@ axon:
 
 manpage:
 	@echo generating manpage
-	@groff -Tascii -man data/axon.1 | less
+	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
+	@sed -r -i "s/axon\\\-([0-9]*\.[0-9]*)*/axon\\\-${VERSION}/g" data/axon.1
+	@groff -man -Tascii data/axon.1 | less
 
 clean:
 	@echo cleaning
