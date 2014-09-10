@@ -85,7 +85,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	term->conf = conf;
 
-	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
+	terminal_set_font(term, conf->font);
 	
 	terminal_set_palette(term, conf->palette);
 
@@ -129,18 +129,33 @@ void terminal_load_options(Terminal *term, Options *opts)
 	if (opts->title) {
 		/* TODO: allow for title "modes" - append, replace (default), ignore */
 		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
+		/* Reset for new windows */
+		g_free(opts->title);
+		opts->title = NULL;
 	}
 	
 	if (opts->font) {
+		/* Set font in conf, but do not update key_file. */
 		term->conf->font = g_strdup(opts->font);
+		terminal_set_font(term, opts->font);
+		/* Since font is referenced by conf now, we can turn off
+		 * the option. This prevents the font from being set
+		 * twice: once in config_load and again here.
+		 * Can't free it though. */
+		opts->font = NULL;
 	}
 
-	/* mutually exclusive options, obviously */
+	/* Mutually exclusive options */
 	if (opts->fullscreen) {
-		/* Correctly set state of menu item */
+		/* Correctly set state of fullscreen menu item
+		 * and trigger callback function */
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item), TRUE);
+		/* Reset for new windows */
+		opts->fullscreen = FALSE;
 	} else if (opts->maximize) {
 		gtk_window_maximize(GTK_WINDOW(term->window));
+		/* Reset for new windows */
+		opts->maximize = FALSE;
 	}
 
 	/* Apply geometry */
