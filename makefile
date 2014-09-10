@@ -8,6 +8,7 @@ VERSION = 0.0
 DISTFILES = AUTHORS LICENSE makefile README TODO colorschemes/ data/ src/
 
 PREFIX ?= /usr
+MANPREFIX ?= ${PREFIX}/share/man
 DATADIR ?= ${PREFIX}/share
 
 all: axon
@@ -21,7 +22,7 @@ manpage:
 	@echo generating manpage
 	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
 	@sed -r -i "s/axon\\\-([0-9]*\.[0-9]*)*/axon\\\-${VERSION}/g" data/axon.1
-	@groff -man -Tascii data/axon.1 | less
+#	@groff -man -Tascii data/axon.1 | less
 
 clean:
 	@echo cleaning
@@ -43,7 +44,7 @@ dist: clean
 	@tar -czf axon-${VERSION}.tar.gz axon-${VERSION}/
 	@rm -rf axon-${VERSION}/
 
-install: all
+install: all manpage
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@install -D -m755 src/axon ${DESTDIR}${PREFIX}/bin/axon
 	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
@@ -51,6 +52,8 @@ install: all
 	@echo installing colorscheme files to ${DESTDIR}${DATADIR}/axon
 	@mkdir -p ${DESTDIR}${DATADIR}/axon/
 	@cp -rf colorschemes/ ${DESTDIR}${DATADIR}/axon/
+	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
+	@install -D -m644 data/axon.1 ${DESTDIR}${MANPREFIX}/man1/axon.1
 	@echo run "make uninstall" to remove
 
 uninstall:
@@ -62,5 +65,7 @@ uninstall:
 	@rm -rf ${DESTDIR}${DATADIR}/axon/colorschemes/
 	@echo removing program data directory
 	@rm -rf ${DATADIR}/axon
+	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
+	@rm -f ${DESTDIR}${MANPREFIX}/man1/axon.1
 
 .PHONY: all axon clean debug dist install uninstall
