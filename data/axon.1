@@ -1,13 +1,23 @@
-.TH AXON 1 axon\-VERSION
+.\" Axon Manpage
+.\"
+.\" Author: David Luco <dluco11@gmail.com>
+.\"
+.\" Proccess this file with:
+.\" groff -man -Tascii axon.1
+.\"
+.TH "AXON" "1" "DATE" "axon\-VERSION" "User Commands"
 .SH NAME
-axon \- simple terminal
+axon \- lightweight terminal emulator
 .SH SYNOPSIS
 .B axon
 [options]
 .SH DESCRIPTION
 .I axon
-is a simple terminal emulator.
+is a lightweight vte-based terminal emulator. It aims to be fast, simple, and light on resources.
 .SH OPTIONS
+.TP
+.B \-h, \-\-help
+Show help options..
 .TP
 .B \-v, \-\-version
 Display version information and exit.
@@ -57,21 +67,16 @@ Start the terminal in fullscreen mode.
 Start the terminal in a maximized state.
 .TP
 .BI "\-g, \-\-geometry " geometry "
-Defines the X11 geometry string, which will fixate the height and width of axon. The form is [=][<width>{xX}<height>][{+-}<xoffset>{+-}<yoffset>]. See
-.BR XParseGeometry (3)
-for further details.
+Set size and/or position of terminal according to X geometry specification.
 .TP
 .BI "\-\-display " display "
 X display to use.
 .SH FILES
-.I axon
-can be customized by creating a custom config.h and (re)compiling the source code. This keeps it fast, secure and simple.
-.SH BUGS
-See the TODO file in the distribution.
-.SH AUTHORS
+.TP
+.I ~/.config/axon/axonrc
+Default configuration file.
+.SH SEE ALSO
+http://github/dluco/axon
+.SH AUTHOR
 .B David Luco
 <dluco11@gmail.com>
-.SH COPYRIGHT
-See the LICENSE file for the terms of redistribution.
-.SH SEE ALSO
-.BR tabbed (1)
