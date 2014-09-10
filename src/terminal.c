@@ -145,17 +145,25 @@ void terminal_load_options(Terminal *term, Options *opts)
 
 	/* Apply geometry */
 	gtk_widget_realize(term->vte);
-	geometry = (opts->geometry) ? g_strdup(opts->geometry) :
-			g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	if (opts->geometry) {
+		geometry = g_strdup(opts->geometry);
+		/* Reset for new windows - only the first window will
+		 * have its geometry set */
+		g_free(opts->geometry);
+		opts->geometry = NULL;
+	} else {
+		geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	}
 	if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), geometry)) {
 		print_err("invalid geometry format\n");
 	}
 	g_free(geometry);
 
-	if (term->opts->output_file) {
-		g_object_set_data(G_OBJECT(term->vte), "output_file", term->opts->output_file);
-		/* Reset for new windows - only the first window will be outputted to file */
-		term->opts->output_file = NULL;
+	if (opts->output_file) {
+		g_object_set_data(G_OBJECT(term->vte), "output_file", opts->output_file);
+		/* Reset for new windows - only the first window will
+		 * be outputted to file */
+		opts->output_file = NULL;
 	}
 }
 
