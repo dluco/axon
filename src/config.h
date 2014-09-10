@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define HTTP_REGEX "(((ftp|http)s?://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?"
+#define HTTP_REGEX "(((gopher|news|telnet|nntp|file|http|ftp|https|ftps)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?/[-A-Za-z0-9_\\$\\.\\+\\!\\*\\(\\),;:@&=\\?/~\\#\\%]*[^]'\\.}>\\) ,\\\"]"
 #define DEFAULT_WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
 #define DEFAULT_CONFIG_FILE "axonrc"
 #define CFG_GROUP "axon"
