@@ -1,5 +1,10 @@
 - if output-file is "-"?
-- work on man page
+- finish on man page
 - highlight email addresses too?
 - hanging for a moment after closing?
-- look at xfce4-terminal's manpage
+- changing font / font size:
+	- window should be resized to keep same number of cols+rows
+		- combine adjust_font_size with char_size_changed:
+			- store previous column and row count somewhere?
+			-> store immediately after parsing geometry from options?
+- http regex doesn't pickup "/"s in url...

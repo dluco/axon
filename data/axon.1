@@ -5,7 +5,7 @@ axon \- simple terminal
 .B axon
 [options]
 .SH DESCRIPTION
-.B axon
+.I axon
 is a simple terminal emulator.
 .SH OPTIONS
 .TP
@@ -15,61 +15,63 @@ Display version information and exit.
 .B \-\-color-table
 Echo the color codes.
 .TP
-.B \-c, \-\-config=FILE
+.BI "\-c, \-\-config " file "
 Config file to load instead of default (~/.config/axon/axonrc).
 .TP
-.B \-o, \-\-output=FILE
-Write the contents of terminal and scrollback to file on exit.
+.BI "\-o, \-\-output " file "
+Write the contents of terminal and scrollback to
+.I file
+on exit.
 .TP
-.B \-d, \-\-working-directory=DIR
+.BI "\-d, \-\-working\-directory " dir "
 Set initial working directory.
 .TP
-.B \-x, \-\-execute
-Execute command.
+.BI "\-x, \-\-execute " command "
+Execute
+.I command
+inside the terminal.
 .TP
-.B \-e, \-\-xterm-execute
-Execute command.
+.BI "\-e, \-\-xterm\-execute " program " [ " arguments " ... ] "
+Execute
+.I program
+instead of the shell.  If this is used it must be the 
+.B last option
+on the command line, as in xterm / rxvt.
 .TP
-.B \-f, \-\-font=FONT
-defines the font to use when axon is run.
+.B \-l, \-\-login
+Start terminal shell as a login shell.
 .TP
-.BI \-g " geometry"
-defines the X11 geometry string, which will fixate the height and width of axon. 
-The form is [=][<width>{xX}<height>][{+-}<xoffset>{+-}<yoffset>]. See
+.B \-H, \-\-hold
+Prevent window from closing after execute command. This is useful for viewing the output of commands and examining error messages that would otherwise cause the terminal to terminate.
+.TP
+.BI "\-f, \-\-font " font "
+Defines the terminal font to use when axon is run.
+.TP
+.BI "\-t, \-\-title " title "
+Set the inital window title for the terminal (default "axon").
+.TP
+.B \-s, \-\-fullscreen
+Start the terminal in fullscreen mode.
+.TP
+.B \-m, \-\-maximize
+Start the terminal in a maximized state.
+.TP
+.BI "\-g, \-\-geometry " geometry "
+Defines the X11 geometry string, which will fixate the height and width of axon. The form is [=][<width>{xX}<height>][{+-}<xoffset>{+-}<yoffset>]. See
 .BR XParseGeometry (3)
 for further details.
 .TP
-.BI \-o " file"
-writes all the I/O to
-.I file.
-This feature is useful when recording axon sessions. A value of "-" means
-standard output.
-.TP
-.BI \-t " title"
-defines the window title (default 'axon').
-.TP
-.BI \-w " windowid"
-embeds axon within the window identified by 
-.I windowid
-.TP
-.B \-v
-prints version information to stderr, then exits.
-.TP
-.BI \-e " program " [ " arguments " "... ]"
-axon executes
-.I program
-instead of the shell.  If this is used it
-.B must be the last option
-on the command line, as in xterm / rxvt.
-.SH CUSTOMIZATION
-.B axon
-can be customized by creating a custom config.h and (re)compiling the source
-code. This keeps it fast, secure and simple.
+.BI "\-\-display " display "
+X display to use.
+.SH FILES
+.I axon
+can be customized by creating a custom config.h and (re)compiling the source code. This keeps it fast, secure and simple.
+.SH BUGS
+See the TODO file in the distribution.
 .SH AUTHORS
-See the LICENSE file for the authors.
-.SH LICENSE
+.B David Luco
+<dluco11@gmail.com>
+.SH COPYRIGHT
 See the LICENSE file for the terms of redistribution.
 .SH SEE ALSO
 .BR tabbed (1)
-.SH BUGS
-See the TODO file in the distribution.
