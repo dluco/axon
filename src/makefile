@@ -1,5 +1,5 @@
 OUT = axon
-VERSION ?= 0.0
+VERSION ?= 1.0
 DATADIR ?= /usr/share
 
 SRC = $(wildcard *.c)
