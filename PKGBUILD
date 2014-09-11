@@ -8,7 +8,7 @@ license=('MIT')
 depends=('vte')
 makedepends=('pkgconfig')
 source=("http://github.com/dluco/${pkgname}/archive/v${pkgver}.tar.gz")
-md5sums=('39cb9b03056dd600fbcef1d50660f44e')
+md5sums=('ea7be4c22ef30f0317832197fbac20d4')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
