@@ -7,7 +7,6 @@
 #include "config.h"
 #include "utils.h"
 
-void config_file_changed(Config *);
 gint dialog_message_question(GtkWidget *, gchar *, ...);
 
 Config *config_new(void)
@@ -67,8 +66,6 @@ void config_load(Config *conf, char *user_file)
 	GError *gerror = NULL;
 	gchar *tmp = NULL;
 	char *config_dir = NULL;
-	GFile *cfgfile;
-	GFileMonitor *cfgfile_monitor;
 
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
@@ -117,12 +114,6 @@ void config_load(Config *conf, char *user_file)
 		g_error_free(gerror);
 		gerror = NULL;
 	}
-
-	/* Add GFile monitor to control external file changes */
-	cfgfile = g_file_new_for_path(conf->config_file);
-	cfgfile_monitor = g_file_monitor_file(cfgfile, 0, NULL, NULL);
-	g_signal_connect_swapped(G_OBJECT(cfgfile_monitor), "changed",
-			G_CALLBACK(config_file_changed), conf);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
 		config_set_value(conf, "font", DEFAULT_FONT);
