@@ -47,6 +47,7 @@ typedef struct config {
 	gboolean autohide_mouse;
 	char *word_chars;
 	gboolean modified;
+	gboolean modified_externally; /* modified by another process */
 } Config;
 
 Config *config_new(void);
@@ -55,7 +56,7 @@ void config_set_integer(Config *, const char *, int);
 void config_set_value(Config *, const char *, const char *);
 void config_set_boolean(Config *, const char *, gboolean);
 void config_load(Config *, char *);
-void config_save(Config *);
+void config_save(Config *, GtkWidget *);
 void config_free(Config *);
 
 #endif /* CONFIG_H */

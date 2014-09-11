@@ -6,32 +6,12 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "terminal.h"
 #include "options.h"
+#include "config.h"
+#include "terminal.h"
 #include "utils.h"
 
 GSList *terminals = NULL;
-
-static void init(void)
-{
-	setlocale(LC_ALL, "");
-
-	/* set TERM env-variable? */
-
-	g_set_application_name("axon");
-	/* Set default window icon for all windows */
-	gtk_window_set_default_icon_name("terminal");
-}
-
-static void cleanup(Options *opts, Config *conf)
-{
-	/* Destroy options */
-	options_free(opts);
-	
-	/* Save and destroy config */
-	config_save(conf);
-	config_free(conf);
-}
 
 int main(int argc, char *argv[])
 {
@@ -39,6 +19,8 @@ int main(int argc, char *argv[])
 	Config *conf;
 	Terminal *term;
 	
+	setlocale(LC_ALL, "");
+
 	/* Load commandline options */
 	opts = options_new();
 	options_parse(opts, argc, argv);
@@ -48,8 +30,11 @@ int main(int argc, char *argv[])
 	/* Load configuration file */
 	config_load(conf, opts->config_file);
 	
-	/* Perform init of program */
-	init();
+	/* FIXME: set TERM env-variable? */
+
+	g_set_application_name("axon");
+	/* Set default window icon for all windows */
+	gtk_window_set_default_icon_name("terminal");
 
 	/* Initialize terminal instance */
 	term = terminal_new();
@@ -63,9 +48,6 @@ int main(int argc, char *argv[])
 
 	/* Run gtk main loop */
 	gtk_main();
-
-	/* Perform cleanup */
-	cleanup(opts, conf);
 
 	return 0;
 }

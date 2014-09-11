@@ -18,6 +18,13 @@ void destroy(Terminal *term)
 	
 	/* Check for empty list */
 	if (terminals == NULL) {
+		/* Last window - save config */
+		config_save(term->conf, term->window);
+
+		/* Destroy options and config */
+		options_free(term->opts);
+		config_free(term->conf);
+
 		gtk_main_quit();
 	} else {
 		/* List not empty, so just destroy window */
@@ -373,9 +380,9 @@ void fullscreen(Terminal *term)
 	}
 }
 
-void preferences(GtkWidget *widget, Terminal *term)
+void config_file_changed(Config *conf)
 {
-	dialog_font(term);
+	conf->modified_externally = TRUE;
 }
 
 void palette_changed(gchar *palette_file)
@@ -400,8 +407,8 @@ void open_url(GtkWidget *widget, char *url)
 
 	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
 	if (!gtk_show_uri(screen, url, gtk_get_current_event_time(), &gerror)) {
-		/* TODO: popup error message - see leafpad */
-		print_err("%s\n", gerror->message);
+		dialog_message(gtk_widget_get_toplevel(widget), GTK_MESSAGE_WARNING,
+				"Failed to open URL \"%s\"", url);
 		g_error_free(gerror);
 	}
 }
@@ -421,8 +428,8 @@ void open_email(GtkWidget *widget, char *address)
 
 	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
 	if (!gtk_show_uri(screen, tmp, gtk_get_current_event_time(), &gerror)) {
-		/* TODO: popup error message - see leafpad */
-		print_err("%s\n", gerror->message);
+		dialog_message(gtk_widget_get_toplevel(widget), GTK_MESSAGE_WARNING,
+				"Failed to open email address \"%s\"", address);
 		g_error_free(gerror);
 	}
 	g_free(tmp);

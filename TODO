@@ -1,5 +1,4 @@
 - if output-file is "-"?
-- hanging for a moment after closing?
 - changing font / font size:
 	- window should be resized to keep same number of cols+rows
 		- combine adjust_font_size with char_size_changed:

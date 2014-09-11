@@ -7,6 +7,9 @@
 #include "config.h"
 #include "utils.h"
 
+void config_file_changed(Config *);
+gint dialog_message_question(GtkWidget *, gchar *, ...);
+
 Config *config_new(void)
 {
 	Config *conf;
@@ -31,6 +34,7 @@ void config_init(Config *conf)
 	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
 	conf->modified = FALSE;
+	conf->modified_externally = FALSE;
 }
 
 void config_free(Config *conf)
@@ -63,6 +67,8 @@ void config_load(Config *conf, char *user_file)
 	GError *gerror = NULL;
 	gchar *tmp = NULL;
 	char *config_dir = NULL;
+	GFile *cfgfile;
+	GFileMonitor *cfgfile_monitor;
 
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
@@ -111,6 +117,12 @@ void config_load(Config *conf, char *user_file)
 		g_error_free(gerror);
 		gerror = NULL;
 	}
+
+	/* Add GFile monitor to control external file changes */
+	cfgfile = g_file_new_for_path(conf->config_file);
+	cfgfile_monitor = g_file_monitor_file(cfgfile, 0, NULL, NULL);
+	g_signal_connect_swapped(G_OBJECT(cfgfile_monitor), "changed",
+			G_CALLBACK(config_file_changed), conf);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
 		config_set_value(conf, "font", DEFAULT_FONT);
@@ -177,17 +189,32 @@ void config_load(Config *conf, char *user_file)
 	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
 }
 
-void config_save(Config *conf)
+void config_save(Config *conf, GtkWidget *window)
 {
+	gint response;
+	gboolean overwrite = TRUE;
 	GError *gerror = NULL;
 
-	/* No changes made to config */
 	if (!conf->modified) {
+		/* No changes made to config */
 		return;
 	}
+	if (conf->modified_externally) {
+		/* File changed by another process */
+		response = dialog_message_question(window,
+				"Configuration has been modified by another process. Overwrite?");
 
-	/* Write contents of cfg to config_file */
-	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
-		die("%s\n", gerror->message);
+		if (response == GTK_RESPONSE_YES) {
+			overwrite = TRUE;
+		} else {
+			overwrite = FALSE;
+		}
+	}
+
+	if (overwrite) {
+		/* Write contents of cfg to config_file */
+		if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
+			die("%s\n", gerror->message);
+		}
 	}
 }
