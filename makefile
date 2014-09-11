@@ -5,7 +5,7 @@ export # Export all variables to sub-makes
 
 VERSION = 0.0
 
-DISTFILES = AUTHORS LICENSE makefile README TODO colorschemes/ data/ src/
+DISTFILES = LICENSE makefile README TODO colorschemes/ data/ src/
 
 PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
@@ -22,7 +22,6 @@ manpage:
 	@echo generating manpage
 	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
 	@sed -r -i "s/axon\\\-([0-9]*\.[0-9]*)*/axon\\\-${VERSION}/g" data/axon.1
-#	@groff -man -Tascii data/axon.1 | less
 
 clean:
 	@echo cleaning
