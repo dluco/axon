@@ -10,11 +10,11 @@ typedef struct terminal {
 	GtkWidget *hbox;
 	GtkWidget *vte; /* VTE terminal */
 	GtkWidget *scrollbar;
-	char *match; /* matched regex string */
 	Config *conf; /* associated Config */
 	Options *opts; /* associated Options */
 	GPid pid;
 	/* state variables and widget "bookmarks" */
+	gint regex_tags[2];
 	gboolean fullscreen;
 	GtkWidget *fullscreen_item;
 } Terminal;

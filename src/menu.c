@@ -77,8 +77,8 @@ void menu_popup_init(GtkWidget *menu, Terminal *term)
 	g_signal_connect_swapped(G_OBJECT(new_window_item), "activate", G_CALLBACK(new_window), term);
 	g_signal_connect_swapped(G_OBJECT(copy_item), "activate", G_CALLBACK(copy_text), term);
 	g_signal_connect_swapped(G_OBJECT(paste_item), "activate", G_CALLBACK(paste_text), term);
-	g_signal_connect(G_OBJECT(fullscreen_item), "activate", G_CALLBACK(fullscreen), term);
-	g_signal_connect(G_OBJECT(font_item), "activate", G_CALLBACK(preferences), term);
+	g_signal_connect_swapped(G_OBJECT(fullscreen_item), "activate", G_CALLBACK(fullscreen), term);
+	g_signal_connect_swapped(G_OBJECT(font_item), "activate", G_CALLBACK(dialog_font), term);
 	g_signal_connect(G_OBJECT(about_item), "activate", G_CALLBACK(dialog_about), NULL);
 
 	/* copy_item sensitivity */

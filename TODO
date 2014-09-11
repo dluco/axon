@@ -1,13 +1,8 @@
 - if output-file is "-"?
-- finish on man page
-- highlight email addresses too?
 - hanging for a moment after closing?
 - changing font / font size:
 	- window should be resized to keep same number of cols+rows
 		- combine adjust_font_size with char_size_changed:
 			- store previous column and row count somewhere?
 			-> store immediately after parsing geometry from options?
-- http regex doesn't pickup "/"s in url...
-- use dwm style for manpage?
-	- use ouput of sed to create page in desired location.
-- look at DBus sessions?
+- look at DBus sessions

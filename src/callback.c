@@ -1,3 +1,4 @@
+#include <string.h>
 #include <sys/wait.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
@@ -228,29 +229,33 @@ void selection_changed(GtkWidget *terminal, GtkWidget *widget)
 gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 {
 	glong column, row;
+	gchar *match;
 	gint tag;
 
 	if (event->type != GDK_BUTTON_PRESS) {
 		return FALSE;
 	}
 	
-	/* find out if the cursor was over a matched expression 
-	column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
-	row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
-	term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
-*/
 	switch(event->button) {
 	case 1:
 		/* find out if the cursor was over a matched expression */
 		column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
 		row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
-		term->match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
+		match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
 
-		/* open url if any */
-		if (term->match != NULL) {
-			open_url(NULL, term->match);
-			g_free(term->match);
-			return TRUE;
+		if (match != NULL) {
+			if (term->regex_tags[0] == tag) {
+				/* url match */
+				open_url(widget, match);
+				g_free(match);
+				return TRUE;
+			} else if (term->regex_tags[1] == tag) {
+				/* email match */
+				open_email(widget, match);
+				g_free(match);
+				return TRUE;
+			}
+			g_free(match);
 		}
 		break;
 	case 2:
@@ -263,7 +268,6 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 	default:
 		break;
 	}
-	/* FIXME: free(match)? */
 
 	return FALSE;
 }
@@ -358,7 +362,7 @@ void paste_text(Terminal *term)
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
 }
 
-void fullscreen(GtkWidget *widget, Terminal *term)
+void fullscreen(Terminal *term)
 {
 	if (term->fullscreen == FALSE) {
 		term->fullscreen = TRUE;
@@ -389,29 +393,37 @@ void palette_changed(gchar *palette_file)
 	config_set_value(term->conf, "color_scheme", palette_file);
 }
 
-void open_url(GtkWidget *widget, char *match)
+void open_url(GtkWidget *widget, char *url)
 {
 	GError *gerror = NULL;
-	gchar *cmd;
-	gchar *browser = NULL;
+	GdkScreen *screen;
 
-	browser = (gchar *)g_getenv("BROWSER");
-
-	if (browser) {
-		cmd = g_strdup_printf("%s %s", browser, match);
-	} else {
-		if ( (browser = g_find_program_in_path("xdg-open")) ) {
-			cmd = g_strdup_printf("%s %s", browser, match);
-			g_free(browser);
-		} else {
-			cmd = g_strdup_printf("firefox %s", match);
-		}
-	}
-
-	if (!g_spawn_command_line_async(cmd, &gerror)) {
-		print_err("Couldn't exec \"%s\": %s\n", cmd, gerror->message);
+	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
+	if (!gtk_show_uri(screen, url, gtk_get_current_event_time(), &gerror)) {
+		/* TODO: popup error message - see leafpad */
+		print_err("%s\n", gerror->message);
 		g_error_free(gerror);
 	}
+}
 
-	g_free(cmd);
+void open_email(GtkWidget *widget, char *address)
+{
+	GError *gerror = NULL;
+	GdkScreen *screen;
+	gchar *tmp;
+
+	/* ensure that a "mailto:" prefix is present */
+	if (strncmp(address, "mailto:", 7) == 0) {
+		tmp = g_strdup(address);
+	} else {
+		tmp = g_strconcat("mailto:", address, NULL);
+	}
+
+	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
+	if (!gtk_show_uri(screen, tmp, gtk_get_current_event_time(), &gerror)) {
+		/* TODO: popup error message - see leafpad */
+		print_err("%s\n", gerror->message);
+		g_error_free(gerror);
+	}
+	g_free(tmp);
 }

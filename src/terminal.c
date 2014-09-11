@@ -81,7 +81,6 @@ void terminal_load_config(Terminal *term, Config *conf)
 {
 	GRegex *regex;
 	GError *gerror = NULL;
-	int id;
 
 	term->conf = conf;
 
@@ -94,11 +93,11 @@ void terminal_load_config(Terminal *term, Config *conf)
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
 
-	/* set the annoying bells */
+	/* set the (annoying) bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
 	
-	/* disable the stupid blinking cursor... */
+	/* disable the (stupid) blinking cursor... */
 	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte),
 			(conf->blinking_cursor) ?
 				VTE_CURSOR_BLINK_ON :
@@ -108,16 +107,28 @@ void terminal_load_config(Terminal *term, Config *conf)
 	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
 
 	/* build the url regex */
-	regex = g_regex_new(HTTP_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
+	regex = g_regex_new(URL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
 	if (gerror) {
 		print_err("%s\n", gerror->message);
 		g_error_free(gerror);
 		return;
 	}
-	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+	term->regex_tags[0] = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
 	/* release the regex owned by vte now */
 	g_regex_unref(regex);
-	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
+	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), term->regex_tags[0], GDK_HAND1);
+
+	/* build the email regex */
+	regex = g_regex_new(EMAIL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
+	if (gerror) {
+		print_err("%s\n", gerror->message);
+		g_error_free(gerror);
+		return;
+	}
+	term->regex_tags[1] = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+	/* release the regex owned by vte now */
+	g_regex_unref(regex);
+	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), term->regex_tags[1], GDK_HAND1);
 }
 
 void terminal_load_options(Terminal *term, Options *opts)

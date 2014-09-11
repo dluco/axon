@@ -19,9 +19,10 @@ gboolean key_press(GtkWidget *, GdkEventKey *, Terminal *);
 void new_window(Terminal *);
 void copy_text(Terminal *);
 void paste_text(Terminal *);
-void fullscreen(GtkWidget *, Terminal *);
-void preferences(GtkWidget *, Terminal *);
+void fullscreen(Terminal *);
+//void preferences(GtkWidget *, Terminal *);
 void palette_changed(gchar *);
 void open_url(GtkWidget *, char *);
+void open_email(GtkWidget *, char *);
 
 #endif /* CALLBACK_H */
