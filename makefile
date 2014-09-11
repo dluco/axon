@@ -48,7 +48,7 @@ dist: clean
 	@tar -czf axon-${VERSION}.tar.gz axon-${VERSION}/
 	@rm -rf axon-${VERSION}/
 
-install: all manpage desktop
+install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@install -D -m755 src/axon ${DESTDIR}${PREFIX}/bin/axon
 	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
