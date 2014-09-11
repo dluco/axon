@@ -24,6 +24,10 @@ manpage:
 	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
 	@sed -r -i "s/axon\\\-([0-9]*\.[0-9]*)*/axon\\\-${VERSION}/g" data/axon.1
 
+desktop:
+	@echo generating desktop file
+	@sed -r -i "s/Version=[0-9]*\.[0-9]*(\.[0-9]*)?/Version=${VERSION}/g" data/axon.desktop
+
 clean:
 	@echo cleaning
 	@${RM} ${OUT} axon-${VERSION}.tar.gz
@@ -44,7 +48,7 @@ dist: clean
 	@tar -czf axon-${VERSION}.tar.gz axon-${VERSION}/
 	@rm -rf axon-${VERSION}/
 
-install: all manpage
+install: all manpage desktop
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@install -D -m755 src/axon ${DESTDIR}${PREFIX}/bin/axon
 	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
