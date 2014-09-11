@@ -34,8 +34,6 @@ typedef struct config {
 	char *config_file;
 	char *font;
 	char *palette;
-	int columns;
-	int rows;
 	gboolean scroll_on_output;
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;

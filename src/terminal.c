@@ -44,7 +44,7 @@ void terminal_init(Terminal *term)
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(term->window), term->hbox);
 	
-	/* signal setup */
+	/* Signal setup */
 	g_signal_connect(G_OBJECT(term->window), "delete-event",
 			G_CALLBACK(delete_event), term);
 	g_signal_connect_swapped(G_OBJECT(term->window), "destroy",
@@ -362,7 +362,23 @@ void terminal_run(Terminal *term, char *cwd)
 
 void terminal_set_font(Terminal *term, char *font)
 {
+	int old_columns, old_rows, owidth, oheight;
+
+	/* Save column and row count before setting font */
+	old_columns = vte_terminal_get_column_count(VTE_TERMINAL(term->vte));
+	old_rows = vte_terminal_get_row_count(VTE_TERMINAL(term->vte));
+
+	/* Take into account padding and border overhead. */
+	gtk_window_get_size(GTK_WINDOW(term->window), &owidth, &oheight);
+	owidth -= VTE_TERMINAL(term->vte)->char_width * old_columns;
+	oheight -= VTE_TERMINAL(term->vte)->char_height * old_rows;
+
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), font);
+	
+//	vte_terminal_set_size(VTE_TERMINAL(term->vte), term->columns, term->rows);
+	gtk_window_resize(GTK_WINDOW(term->window),
+			old_columns * VTE_TERMINAL(term->vte)->char_width + owidth,
+			old_rows * VTE_TERMINAL(term->vte)->char_height + oheight);
 }
 
 void terminal_show(Terminal *term)

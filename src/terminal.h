@@ -14,9 +14,11 @@ typedef struct terminal {
 	Options *opts; /* associated Options */
 	GPid pid;
 	/* state variables and widget "bookmarks" */
-	gint regex_tags[2];
+	int columns;
+	int rows;
 	gboolean fullscreen;
 	GtkWidget *fullscreen_item;
+	gint regex_tags[2];
 } Terminal;
 
 Terminal *terminal_new(void);

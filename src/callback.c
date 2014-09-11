@@ -123,65 +123,70 @@ void set_title(GtkWidget *terminal, GtkWidget *window)
 	gtk_window_set_title(GTK_WINDOW(window), vte_terminal_get_window_title(VTE_TERMINAL(terminal)));
 }
 
-void char_size_changed(GtkWidget *widget, guint width, guint height, gpointer data)
+/* The size of a character in the terminal has changed - reset geometry hints */
+void char_size_changed(GtkWidget *terminal, guint width, guint height, gpointer data)
 {
 	GtkWindow *window;
 	GdkGeometry geometry;
 	GtkBorder *inner_border;
 
 	g_assert(GTK_IS_WINDOW(data));
-	g_assert(VTE_IS_TERMINAL(widget));
+	g_assert(VTE_IS_TERMINAL(terminal));
 
 	window = GTK_WINDOW(data);
-	if (!gtk_widget_get_realized (GTK_WIDGET (window)))
+	if (!gtk_widget_get_realized(GTK_WIDGET (window))) {
 		return;
+	}
 
-	gtk_widget_style_get (widget, "inner-border", &inner_border, NULL);
+	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
+	/* Resize increments - equal to one character in either direction */
 	geometry.width_inc = width;
 	geometry.height_inc = height;
 	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
 	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
 	geometry.min_width = geometry.base_width + width * 2;
 	geometry.min_height = geometry.base_height + height * 2;
-	gtk_border_free (inner_border);
+	gtk_border_free(inner_border);
 
-	gtk_window_set_geometry_hints(window, widget, &geometry,
-				      GDK_HINT_RESIZE_INC |
-				      GDK_HINT_BASE_SIZE |
-				      GDK_HINT_MIN_SIZE);
+	gtk_window_set_geometry_hints(window, terminal, &geometry,
+			GDK_HINT_RESIZE_INC |
+			GDK_HINT_BASE_SIZE |
+			GDK_HINT_MIN_SIZE);
 }
 
-void char_size_realized(GtkWidget *widget, gpointer data)
+void char_size_realized(GtkWidget *terminal, gpointer data)
 {
-	VteTerminal *terminal;
+	VteTerminal *vte;
 	GtkWindow *window;
 	GdkGeometry geometry;
 	guint width, height;
 	GtkBorder *inner_border;
 
 	g_assert(GTK_IS_WINDOW(data));
-	g_assert(VTE_IS_TERMINAL(widget));
+	g_assert(VTE_IS_TERMINAL(terminal));
 
-	terminal = VTE_TERMINAL(widget);
+	vte = VTE_TERMINAL(terminal);
 	window = GTK_WINDOW(data);
-	if (!gtk_widget_get_realized (GTK_WIDGET(window)))
+	if (!gtk_widget_get_realized(GTK_WIDGET(window))) {
 		return;
+	}
 
-	gtk_widget_style_get (widget, "inner-border", &inner_border, NULL);
-	width = vte_terminal_get_char_width (terminal);
-	height = vte_terminal_get_char_height (terminal);
+	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
+	width = vte_terminal_get_char_width(vte);
+	height = vte_terminal_get_char_height(vte);
+	/* Resize increments - equal to one character in either direction */
 	geometry.width_inc = width;
 	geometry.height_inc = height;
 	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
 	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
 	geometry.min_width = geometry.base_width + width * 2;
 	geometry.min_height = geometry.base_height + height * 2;
-	gtk_border_free (inner_border);
+	gtk_border_free(inner_border);
 
-	gtk_window_set_geometry_hints(window, widget, &geometry,
-				      GDK_HINT_RESIZE_INC |
-				      GDK_HINT_BASE_SIZE |
-				      GDK_HINT_MIN_SIZE);
+	gtk_window_set_geometry_hints(window, terminal, &geometry,
+			GDK_HINT_RESIZE_INC |
+			GDK_HINT_BASE_SIZE |
+			GDK_HINT_MIN_SIZE);
 }
 
 void adjust_font_size(GtkWidget *terminal, GtkWidget *window, gint howmuch)
@@ -206,14 +211,14 @@ void adjust_font_size(GtkWidget *terminal, GtkWidget *window, gint howmuch)
 	newsize = pango_font_description_get_size(desired) / PANGO_SCALE;
 	newsize += howmuch;
 	pango_font_description_set_size(desired,
-					CLAMP(newsize, 4, 144) * PANGO_SCALE);
+			CLAMP(newsize, 4, 144) * PANGO_SCALE);
 
 	/* Change the font, then resize the window so that we have the same
 	 * number of rows and columns. */
 	vte_terminal_set_font(vte, desired);
 	gtk_window_resize(GTK_WINDOW(window),
-			  old_columns * vte->char_width + owidth,
-			  old_rows * vte->char_height + oheight);
+			old_columns * vte->char_width + owidth,
+			old_rows * vte->char_height + oheight);
 
 	pango_font_description_free(desired);
 }
