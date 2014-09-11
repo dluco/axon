@@ -53,6 +53,8 @@ install: all manpage
 	@cp -rf colorschemes/ ${DESTDIR}${DATADIR}/axon/
 	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
 	@install -D -m644 data/axon.1 ${DESTDIR}${MANPREFIX}/man1/axon.1
+	@echo installing example configuration file to ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
+	@install -D -m644 data/axonrc ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
 	@echo run "make uninstall" to remove
 
 uninstall:
@@ -66,5 +68,9 @@ uninstall:
 	@rm -rf ${DATADIR}/axon
 	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
 	@rm -f ${DESTDIR}${MANPREFIX}/man1/axon.1
+	@echo removing example configuration file from ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
+	@rm -f ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
+	@echo removing program documentation directory
+	@rm -rf ${DESTDIR}${PREFIX}/share/doc/axon/
 
 .PHONY: all axon clean debug dist install uninstall
