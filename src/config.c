@@ -177,9 +177,17 @@ void config_load(Config *conf, char *user_file)
 	conf->blinking_cursor = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
-		config_set_value(conf, "cursor_type", "VTE_CURSOR_SHAPE_BLOCK");
+		config_set_value(conf, "cursor_type", DEFAULT_CURSOR_TYPE);
 	}
-	conf->cursor_type = g_key_file_get_integer(conf->cfg, CFG_GROUP, "cursor_type", NULL);
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "cursor_type", NULL);
+	if (strcmp(tmp, "beam") == 0) {
+		conf->cursor_type = VTE_CURSOR_SHAPE_IBEAM;
+	} else if (strcmp(tmp , "underline") == 0) {
+		conf->cursor_type = VTE_CURSOR_SHAPE_UNDERLINE;
+	} else {
+		conf->cursor_type = VTE_CURSOR_SHAPE_BLOCK;
+	}
+	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "autohide_mouse", NULL)) {
 		config_set_boolean(conf, "autohide_mouse", AUTOHIDE_MOUSE);
