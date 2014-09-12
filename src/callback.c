@@ -351,6 +351,14 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
+	/* Reset Terminal: Ctrl+Shift+R */
+	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
+		if (event->keyval == RESET_KEY) {
+			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
+			return TRUE;
+		}
+	}
+
 	/* Keybindings without modifiers */
 	switch(event->keyval) {
 	case GDK_KEY_F11:
