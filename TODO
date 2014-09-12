@@ -1,5 +1,6 @@
 - reset terminal:
 	- to clear all or not to clear all, that is the question...
+	- update manpage and readme
 - icon-title setting?
 - look at DBus sessions
 - overwrite config dialog:
