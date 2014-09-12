@@ -6,7 +6,7 @@ gboolean delete_event(GtkWidget *, GdkEvent *, Terminal *);
 void destroy_window(Terminal *);
 void child_exited(GtkWidget *, Terminal *);
 void eof(GtkWidget *, Terminal *);
-void set_title(GtkWidget *, GtkWidget *);
+void set_title(GtkWidget *, Terminal *);
 void char_size_changed(GtkWidget *, guint, guint, gpointer);
 void char_size_realized(GtkWidget *, gpointer);
 void adjust_font_size(GtkWidget *, GtkWidget *, gint);

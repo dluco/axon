@@ -67,7 +67,7 @@ void terminal_init(Terminal *term)
 	g_signal_connect(G_OBJECT(term->vte), "eof",
 			G_CALLBACK(eof), term);
 	g_signal_connect(G_OBJECT(term->vte), "window-title-changed",
-			G_CALLBACK(set_title), term->window);
+			G_CALLBACK(set_title), term);
 	g_signal_connect(G_OBJECT(term->vte), "increase-font-size",
 			G_CALLBACK(increase_font_size), term->window);
 	g_signal_connect(G_OBJECT(term->vte), "decrease-font-size",
@@ -137,7 +137,6 @@ void terminal_load_options(Terminal *term, Options *opts)
 	term->opts = opts;
 
 	if (opts->title) {
-		/* TODO: allow for title "modes" - append, replace (default), ignore */
 		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
 		g_free(opts->title);
 	}

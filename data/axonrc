@@ -3,6 +3,8 @@
 font=Monospace, 11
 # Preset colorschemes (/usr/share/axon/colorschemes)
 color_scheme=white-on-black
+# Window title mode: replace (default), ignore
+title_mode=replace
 # Scroll to bottom on output
 scroll_on_output=false
 # Scroll to bottom when a key is pressed
@@ -10,7 +12,7 @@ scroll_on_keystroke=true
 # Show the terminal scrollbar
 scrollbar=false
 # Number of scrollback lines (infinite = -1)
-scrollback_lines=-1
+scrollback_lines=1024
 # Enable/Disable terminal beeping
 audible_bell=false
 # Enable/Disable terminal visible bell
@@ -20,6 +22,6 @@ blinking_cursor=false
 # Style of cursor: VTE_CURSOR_SHAPE_(BLOCK|IBEAM|UNDERLINE)
 cursor_type=VTE_CURSOR_SHAPE_BLOCK
 # Hide mouse cursor when a key is pressed
-autohide_mouse=true
+autohide_mouse=false
 # Characters to treat as parts of words when double-clicking
 word_chars=-A-Za-z0-9,./?%&#:_=+@~

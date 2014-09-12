@@ -10,6 +10,7 @@
 #define DEFAULT_ROWS 24
 #define DEFAULT_FONT "Monospace, 11"
 #define DEFAULT_COLOR_SCHEME "white-on-black"
+#define DEFAULT_TITLE_MODE "replace"
 #define PALETTE_SIZE 16
 #define SCROLL_ON_OUTPUT FALSE
 #define SCROLL_ON_KEYSTROKE TRUE
@@ -18,7 +19,13 @@
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
-#define AUTOHIDE_MOUSE TRUE
+#define AUTOHIDE_MOUSE FALSE
+
+enum
+{
+	TITLE_MODE_REPLACE,
+	TITLE_MODE_IGNORE
+};
 
 #define NEW_WINDOW_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define COPY_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
@@ -34,6 +41,7 @@ typedef struct config {
 	char *config_file;
 	char *font;
 	char *palette;
+	int title_mode;
 	gboolean scroll_on_output;
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;

@@ -1,4 +1,9 @@
-- if output-file is "-"?
+- icon-title setting?
 - look at DBus sessions
 - overwrite config dialog:
 	- works correctly with CTRL-SHIFT-Q, but not with window button...
+
+
+Non-Goals:
+----------
+* allow output with "-o" to "-", or stdout

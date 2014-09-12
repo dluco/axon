@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -127,6 +128,17 @@ void config_load(Config *conf, char *user_file)
 	}
 	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
 	conf->palette = g_strdup(tmp);
+	free(tmp);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "title_mode", NULL)) {
+		config_set_value(conf, "title_mode", DEFAULT_TITLE_MODE);
+	}
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "title_mode", NULL);
+	if (strcmp(tmp, "replace") == 0) {
+		conf->title_mode = TITLE_MODE_REPLACE;
+	} else {
+		conf->title_mode = TITLE_MODE_IGNORE;
+	}
 	free(tmp);
 	
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {

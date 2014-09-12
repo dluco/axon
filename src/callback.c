@@ -137,9 +137,12 @@ void eof(GtkWidget *terminal, Terminal *term)
 	}
 }
 
-void set_title(GtkWidget *terminal, GtkWidget *window)
+void set_title(GtkWidget *terminal, Terminal *term)
 {
-	gtk_window_set_title(GTK_WINDOW(window), vte_terminal_get_window_title(VTE_TERMINAL(terminal)));
+	if (term->conf->title_mode == TITLE_MODE_REPLACE) {
+		gtk_window_set_title(GTK_WINDOW(term->window),
+				vte_terminal_get_window_title(VTE_TERMINAL(terminal)));
+	}
 }
 
 /* The size of a character in the terminal has changed - reset geometry hints */
@@ -294,7 +297,6 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 	case 3:
 		/* Right button: show popup menu */
 		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
-		/* TODO: show "open link" and "copy link" options in menu if match? */
 		return TRUE;
 	default:
 		break;
