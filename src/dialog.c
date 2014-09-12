@@ -97,7 +97,7 @@ gint dialog_message_question(GtkWidget *window, gchar *message, ...)
 	va_end(ap);
 	
 	dialog = gtk_message_dialog_new(GTK_WINDOW(window),
-			GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_DIALOG_MODAL,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
 			str);

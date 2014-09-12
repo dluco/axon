@@ -1,2 +1,4 @@
 - if output-file is "-"?
 - look at DBus sessions
+- overwrite config dialog:
+	- works correctly with CTRL-SHIFT-Q, but not with window button...
