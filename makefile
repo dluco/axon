@@ -60,7 +60,6 @@ install: all
 	@install -D -m644 data/axon.1 ${DESTDIR}${MANPREFIX}/man1/axon.1
 	@echo installing example configuration file to ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
 	@install -D -m644 data/axonrc ${DESTDIR}${PREFIX}/share/doc/axon/axonrc
-	@echo run "make uninstall" to remove
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
