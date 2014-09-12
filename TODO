@@ -1,7 +1,2 @@
 - if output-file is "-"?
-- changing font / font size:
-	- window should be resized to keep same number of cols+rows
-		- combine adjust_font_size with char_size_changed:
-			- store previous column and row count somewhere?
-			-> store immediately after parsing geometry from options?
 - look at DBus sessions

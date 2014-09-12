@@ -13,17 +13,11 @@
 
 GSList *terminals = NULL;
 
-static void init(Options *opts)
+static void init(Options *opts, Config *conf)
 {
-	Config *conf;
 	Terminal *term;
 	GFile *cfgfile;
 	GFileMonitor *cfgfile_monitor;
-
-	/* Load configuration file */
-	conf = config_new();
-	config_init(conf);
-	config_load(conf, opts->config_file);
 
 	/* Add GFile monitor to control external file changes */
 	cfgfile = g_file_new_for_path(conf->config_file);
@@ -50,9 +44,17 @@ static void init(Options *opts)
 	terminal_show(term);
 }
 
+static void cleanup(Options *opts, Config *conf)
+{
+	/* Destroy options and config */
+	options_free(opts);
+	config_free(conf);
+}
+
 int main(int argc, char *argv[])
 {
 	Options *opts;
+	Config *conf;
 	
 	setlocale(LC_ALL, "");
 
@@ -60,11 +62,19 @@ int main(int argc, char *argv[])
 	opts = options_new();
 	options_parse(opts, argc, argv);
 
-	/* Initialization */
-	init(opts);
+	/* Load configuration file */
+	conf = config_new();
+	config_init(conf);
+	config_load(conf, opts->config_file);
+
+	/* Perform initialization */
+	init(opts, conf);
 	
-	/* Run gtk main loop */
+	/* Run GTK main loop */
 	gtk_main();
+
+	/* Perform cleanup */
+	cleanup(opts, conf);
 
 	return 0;
 }

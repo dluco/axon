@@ -11,25 +11,9 @@
 
 extern GSList *terminals;
 
-void destroy(Terminal *term)
+void destroy(void)
 {
-	/* Remove terminal from list */
-	terminals = g_slist_remove(terminals, term);
-	
-	/* Check for empty list */
-	if (terminals == NULL) {
-		/* Last window - save config */
-		config_save(term->conf, term->window);
-
-		/* Destroy options and config */
-		options_free(term->opts);
-		config_free(term->conf);
-
-		gtk_main_quit();
-	} else {
-		/* List not empty, so just destroy window */
-		gtk_widget_destroy(term->window);
-	}
+	gtk_main_quit();
 }
 
 gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
@@ -61,6 +45,11 @@ void destroy_window(Terminal *term)
 	GOutputStream *stream;
 	GError *gerror = NULL;
 
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf, term->window);
+	}
+
 	/* Check if terminal has an output file attached */
 	output_file = g_object_get_data(G_OBJECT(term->vte), "output_file");
 
@@ -70,7 +59,9 @@ void destroy_window(Terminal *term)
 		stream = G_OUTPUT_STREAM(g_file_replace(file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
 
 		if (stream) {
-			vte_terminal_write_contents(VTE_TERMINAL(term->vte), stream, VTE_TERMINAL_WRITE_DEFAULT, NULL, &gerror);
+			vte_terminal_write_contents(VTE_TERMINAL(term->vte),
+					stream, VTE_TERMINAL_WRITE_DEFAULT,
+					NULL, &gerror);
 			
 			g_object_unref(stream);
 		}
@@ -84,12 +75,25 @@ void destroy_window(Terminal *term)
 		g_object_unref(file);
 	}
 
-	destroy(term);
+
+	/* Remove terminal from list, destroy, and free */
+	terminals = g_slist_remove(terminals, term);
+	gtk_widget_destroy(term->window);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		destroy();
+	}
 }
 
 void child_exited(GtkWidget *terminal, Terminal *term)
 {
 	int status;
+
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf, term->window);
+	}
 
 	if (term->opts->hold) {
 		/* Hold option activated */
@@ -100,12 +104,22 @@ void child_exited(GtkWidget *terminal, Terminal *term)
 	/* TODO: check wait return */
 
 	destroy_window(term);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		destroy();
+	}
 }
 
 /* Required when using multiple terminals */
 void eof(GtkWidget *terminal, Terminal *term)
 {
 	int status;
+
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf, term->window);
+	}
 
 	if (term->opts->hold) {
 		/* Hold option activated */
@@ -116,6 +130,11 @@ void eof(GtkWidget *terminal, Terminal *term)
 	/* TODO: check wait return */
 
 	destroy_window(term);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		destroy();
+	}
 }
 
 void set_title(GtkWidget *terminal, GtkWidget *window)
@@ -350,14 +369,23 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 void new_window(Terminal *term)
 {
 	char *cwd;
+	char *geometry;
 
 	Terminal *n_term = terminal_new();
 	terminal_init(n_term);
 	
 	cwd = terminal_get_cwd(term);
 	terminal_load_config(n_term, term->conf);
-	terminal_load_options(n_term, term->opts);
+	n_term->opts = term->opts;
 	
+	/* Apply geometry */
+	gtk_widget_realize(n_term->vte);
+	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
+		print_err("failed to set terminal size\n");
+	}
+	g_free(geometry);
+
 	terminal_run(n_term, cwd);
 	terminal_show(n_term);
 

@@ -84,8 +84,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	term->conf = conf;
 
-	terminal_set_font(term, conf->font);
-	
+	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	terminal_set_palette(term, conf->palette);
 
 	/* Scroll-related stuff */
@@ -140,20 +139,14 @@ void terminal_load_options(Terminal *term, Options *opts)
 	if (opts->title) {
 		/* TODO: allow for title "modes" - append, replace (default), ignore */
 		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
-		/* Reset for new windows */
 		g_free(opts->title);
-		opts->title = NULL;
 	}
 	
 	if (opts->font) {
 		/* Set font in conf, but do not update key_file. */
 		term->conf->font = g_strdup(opts->font);
-		terminal_set_font(term, opts->font);
-		/* Since font is referenced by conf now, we can turn off
-		 * the option. This prevents the font from being set
-		 * twice: once in config_load and again here.
-		 * Can't free it though. */
-		opts->font = NULL;
+		vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), opts->font);
+		g_free(opts->font);
 	}
 
 	/* Mutually exclusive options */
@@ -161,22 +154,15 @@ void terminal_load_options(Terminal *term, Options *opts)
 		/* Correctly set state of fullscreen menu item
 		 * and trigger callback function */
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item), TRUE);
-		/* Reset for new windows */
-		opts->fullscreen = FALSE;
 	} else if (opts->maximize) {
 		gtk_window_maximize(GTK_WINDOW(term->window));
-		/* Reset for new windows */
-		opts->maximize = FALSE;
 	}
 
 	/* Apply geometry */
 	gtk_widget_realize(term->vte);
 	if (opts->geometry) {
 		geometry = g_strdup(opts->geometry);
-		/* Reset for new windows - only the first window will
-		 * have its geometry set */
 		g_free(opts->geometry);
-		opts->geometry = NULL;
 	} else {
 		geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
 	}
@@ -187,9 +173,6 @@ void terminal_load_options(Terminal *term, Options *opts)
 
 	if (opts->output_file) {
 		g_object_set_data(G_OBJECT(term->vte), "output_file", opts->output_file);
-		/* Reset for new windows - only the first window will
-		 * be outputted to file */
-		opts->output_file = NULL;
 	}
 }
 
@@ -362,23 +345,27 @@ void terminal_run(Terminal *term, char *cwd)
 
 void terminal_set_font(Terminal *term, char *font)
 {
+	VteTerminal *vte;
 	int old_columns, old_rows, owidth, oheight;
 
+	vte = VTE_TERMINAL(term->vte);
+
 	/* Save column and row count before setting font */
-	old_columns = vte_terminal_get_column_count(VTE_TERMINAL(term->vte));
-	old_rows = vte_terminal_get_row_count(VTE_TERMINAL(term->vte));
+	old_columns = vte->column_count;
+	old_rows = vte->row_count;
 
 	/* Take into account padding and border overhead. */
 	gtk_window_get_size(GTK_WINDOW(term->window), &owidth, &oheight);
-	owidth -= VTE_TERMINAL(term->vte)->char_width * old_columns;
-	oheight -= VTE_TERMINAL(term->vte)->char_height * old_rows;
+	owidth -= vte->char_width * old_columns;
+	oheight -= vte->char_height * old_rows;
 
-	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), font);
+	/* Apply font */
+	vte_terminal_set_font_from_string(vte, font);
 	
-//	vte_terminal_set_size(VTE_TERMINAL(term->vte), term->columns, term->rows);
+	/* Restore window geometry */
 	gtk_window_resize(GTK_WINDOW(term->window),
-			old_columns * VTE_TERMINAL(term->vte)->char_width + owidth,
-			old_rows * VTE_TERMINAL(term->vte)->char_height + oheight);
+			old_columns * vte->char_width + owidth,
+			old_rows * vte->char_height + oheight);
 }
 
 void terminal_show(Terminal *term)

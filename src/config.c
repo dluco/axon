@@ -39,8 +39,8 @@ void config_init(Config *conf)
 void config_free(Config *conf)
 {
 	g_key_file_free(conf->cfg);
-	free(conf->config_file);
-	free(conf->font);
+	g_free(conf->config_file);
+	g_free(conf->font);
 }
 
 void config_set_integer(Config *conf, const char *key, int value)

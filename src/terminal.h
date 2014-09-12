@@ -14,8 +14,6 @@ typedef struct terminal {
 	Options *opts; /* associated Options */
 	GPid pid;
 	/* state variables and widget "bookmarks" */
-	int columns;
-	int rows;
 	gboolean fullscreen;
 	GtkWidget *fullscreen_item;
 	gint regex_tags[2];

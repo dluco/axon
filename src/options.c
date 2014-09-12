@@ -26,7 +26,7 @@ void options_free(Options *opts)
 {
 	assert(opts != NULL);
 
-	free(opts);
+	g_free(opts);
 }
 
 void options_parse(Options *opts, int argc, char *argv[])
