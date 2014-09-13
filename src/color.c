@@ -32,7 +32,7 @@ gchar **color_get_palette_files(void)
 		palette_files = g_strsplit(tmp_files, ";", -1);
 		
 		/* Sort array */
-		sort_string_array(palette_files);
+		strv_sort(palette_files);
 		
 		g_free(tmp_files);
 		g_dir_close(palette_dir);

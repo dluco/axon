@@ -7,6 +7,7 @@
 #include "terminal.h"
 #include "callback.h"
 #include "dialog.h"
+#include "search.h"
 #include "utils.h"
 
 extern GSList *terminals;
@@ -36,6 +37,32 @@ gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
 	}
 
 	return FALSE;	
+}
+
+void new_window(Terminal *term)
+{
+	char *cwd;
+	char *geometry;
+
+	Terminal *n_term = terminal_new();
+	terminal_init(n_term);
+	
+	cwd = terminal_get_cwd(term);
+	terminal_load_config(n_term, term->conf);
+	n_term->opts = term->opts;
+	
+	/* Apply geometry */
+	gtk_widget_realize(n_term->vte);
+	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
+		print_err("failed to set terminal size\n");
+	}
+	g_free(geometry);
+
+	terminal_run(n_term, cwd);
+	terminal_show(n_term);
+
+	g_free(cwd);
 }
 
 void destroy_window(Terminal *term)
@@ -333,10 +360,26 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Copy text: Ctrl+Shift+V */
+	/* Paste text: Ctrl+Shift+V */
 	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
 		if (event->keyval == PASTE_KEY) {
 			paste_text(term);
+			return TRUE;
+		}
+	}
+
+	/* Search for text: Ctrl+Shift+F */
+	if ((event->state & SEARCH_ACCEL) == SEARCH_ACCEL) {
+		if (event->keyval == SEARCH_KEY) {
+			search_dialog(term);
+			return TRUE;
+		}
+	}
+
+	/* Search for next occurrence of text: Ctrl+Shift+G */
+	if ((event->state & SEARCH_NEXT_ACCEL) == SEARCH_NEXT_ACCEL) {
+		if (event->keyval == SEARCH_NEXT_KEY) {
+			search_find_next(term);
 			return TRUE;
 		}
 	}
@@ -376,32 +419,6 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 	return FALSE;
 }
 
-void new_window(Terminal *term)
-{
-	char *cwd;
-	char *geometry;
-
-	Terminal *n_term = terminal_new();
-	terminal_init(n_term);
-	
-	cwd = terminal_get_cwd(term);
-	terminal_load_config(n_term, term->conf);
-	n_term->opts = term->opts;
-	
-	/* Apply geometry */
-	gtk_widget_realize(n_term->vte);
-	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
-	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
-		print_err("failed to set terminal size\n");
-	}
-	g_free(geometry);
-
-	terminal_run(n_term, cwd);
-	terminal_show(n_term);
-
-	g_free(cwd);
-}
-
 void copy_text(Terminal *term)
 {
 	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
@@ -432,7 +449,7 @@ void palette_changed(gchar *palette_file)
 {
 	Terminal *term;
 
-	remove_suffix(palette_file, "theme");
+	str_remove_suffix(palette_file, "theme");
 
 	g_slist_foreach(terminals, (GFunc)terminal_set_palette, palette_file);
 	

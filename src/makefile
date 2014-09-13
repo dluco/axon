@@ -50,6 +50,10 @@ terminal.o: terminal.c
 	@echo $(CC) -c terminal.c
 	@$(CC) $(CFLAGS) terminal.c
 
+search.o: search.c
+	@echo $(CC) -c search.c
+	@$(CC) $(CFLAGS) search.c
+
 utils.o: utils.c
 	@echo $(CC) -c utils.c
 	@$(CC) $(CFLAGS) utils.c

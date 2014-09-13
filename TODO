@@ -1,12 +1,9 @@
-- reset terminal:
-	- to clear all or not to clear all, that is the question...
-	- update manpage and readme
-- icon-title setting?
-- look at DBus sessions
+TODO:
+-----
 - overwrite config dialog:
 	- works correctly with CTRL-SHIFT-Q, but not with window button...
 
 
-Non-Goals:
+not-TODO:
 ----------
 * allow output with "-o" to "-", or stdout

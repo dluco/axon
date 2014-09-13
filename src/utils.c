@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <glib.h>
 
 #include "utils.h"
 
@@ -34,11 +33,11 @@ void print_err(const char *errstr, ...)
 	va_end(ap);
 }
 
-static void colortable_sub(const gchar *bright, guint start)
+static void colortable_sub(const char *bright, unsigned int start)
 {
-  guint n;
-  guint fg;
-  guint bg;
+  unsigned int n;
+  unsigned int fg;
+  unsigned int bg;
 
   for (n = start; n <= 37; n++)
     {
@@ -50,35 +49,33 @@ static void colortable_sub(const gchar *bright, guint start)
         fg = n;
 
       /* blank */
-      g_print (" %*s%2dm |",
+      printf(" %*s%2dm |",
                2, bright, fg);
 
       /* without background color */
-      g_print ("\e[%s%dm %*s%2dm ",
+      printf("\e[%s%dm %*s%2dm ",
                bright, fg, 2, bright, fg);
 
       /* with background color */
       for (bg = 40; bg <= 47; bg++)
         {
-          g_print ("\e[%s%d;%dm %*s%2dm ",
+          printf("\e[%s%d;%dm %*s%2dm ",
                    bright, fg, bg, 2, bright, fg);
         }
 
-      g_print ("\e[0m\n");
+      printf("\e[0m\n");
     }
 }
 
-
-
 void colortable(void)
 {
-  guint bg;
+  unsigned int bg;
 
   /* header */
-  g_print ("%*s|%*s", 7, "", 7, "");
+  printf("%*s|%*s", 7, "", 7, "");
   for (bg = 40; bg <= 47; bg++)
-    g_print ("   %dm ", bg);
-  g_print ("\n");
+    printf("   %dm ", bg);
+  printf("\n");
 
   /* normal */
   colortable_sub ("", 28);
@@ -87,27 +84,59 @@ void colortable(void)
   colortable_sub ("1;", 30);
 }
 
-void sort_string_array(char **strings)
+unsigned int strv_length(char **str_array)
 {
-	int n;
+	unsigned int i;
 
-	n = g_strv_length(strings);
-	qsort(strings, n, sizeof(*strings), string_cmp);
+	if (str_array == NULL) return 0;
+
+	for (i = 0; str_array[i]; i++);
+
+	return i;
 }
 
-int string_cmp(const void *a, const void *b)
+static int str_cmp(const void *a, const void *b)
 {
 	const char **ia = (const char **)a;
 	const char **ib = (const char **)b;
 	return strcmp(*ia, *ib);
 }
 
-void remove_suffix(char *input, char *suffix)
+void strv_sort(char **str_array)
+{
+	int n;
+
+	n = strv_length(str_array);
+
+	qsort(str_array, n, sizeof(*str_array), str_cmp);
+}
+
+int str_has_suffix(const char *str, const char *suffix)
+{
+	int str_len;
+	int suffix_len;
+
+	if (str == NULL || suffix == NULL) {
+		return 0;
+	}
+
+	str_len = strlen(str);
+	suffix_len = strlen(suffix);
+
+	if (str_len < suffix_len) {
+		return 0;
+	}
+
+	return strcmp(str + str_len - suffix_len, suffix) == 0;
+}
+
+void str_remove_suffix(char *input, char *suffix)
 {
 	char *tmp;
 
-	/* Find last '.' in string and check if suffix appears after */
-	if ((tmp = strrchr(input, '.')) && g_str_has_suffix(tmp, suffix)) {
+	if (str_has_suffix(input, suffix)) {
+		/* nul-terminate string at the last dot */
+		tmp = strrchr(input, '.');
 		*tmp = '\0';
 	}
 }
