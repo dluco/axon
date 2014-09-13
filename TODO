@@ -1,6 +1,6 @@
 TODO:
 -----
-- overwrite config dialog:
+- BUG: overwrite config dialog:
 	- works correctly with CTRL-SHIFT-Q, but not with window button...
 
 
