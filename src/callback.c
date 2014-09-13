@@ -384,20 +384,20 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
+	/* Reset Terminal: Ctrl+Shift+R */
+	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
+		if (event->keyval == RESET_KEY) {
+			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
+			return TRUE;
+		}
+	}
+
 	/* Close Window: Ctrl+Shift+Q */
 	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
 		if (event->keyval == CLOSE_WINDOW_KEY) {
 			if (!delete_event(NULL, NULL, term)) {
 				destroy_window(term);
 			}
-			return TRUE;
-		}
-	}
-
-	/* Reset Terminal: Ctrl+Shift+R */
-	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
-		if (event->keyval == RESET_KEY) {
-			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
 			return TRUE;
 		}
 	}

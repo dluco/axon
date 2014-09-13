@@ -14,7 +14,9 @@ Keybindings
 - Ctrl+Shift+N : Open New Window
 - Ctrl+Shift+C : Copy Selected Text
 - Ctrl+Shift+P : Paste Clipboard Contents
-- Ctrl+Shift+Q : Close Window
 - Ctrl+Shift+R : Reset Terminal
+- Ctrl+Shift+F : Find Text
+- Ctrl+Shift+G : Find Next Occurrence of Text
+- Ctrl+Shift+Q : Close Window
 - F11 : Toggle Fullscreen
 - Menu : Show Context Menu (Right-Click)
