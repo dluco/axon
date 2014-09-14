@@ -130,6 +130,11 @@ void config_load(Config *conf, char *user_file)
 	conf->palette = g_strdup(tmp);
 	free(tmp);
 
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "opacity", NULL)) {
+		config_set_integer(conf, "opacity", DEFAULT_OPACITY);
+	}
+	conf->opacity = g_key_file_get_integer(conf->cfg, CFG_GROUP, "opacity", NULL);
+
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "title_mode", NULL)) {
 		config_set_value(conf, "title_mode", DEFAULT_TITLE_MODE);
 	}

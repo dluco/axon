@@ -344,7 +344,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		event->keyval = gdk_keyval_to_upper(event->keyval);
 	}
 
-	/* Open new window: Ctrl+Shift+N */
+	/* Open new window: Ctrl+Shift+n */
 	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
 		if (event->keyval == NEW_WINDOW_KEY) {
 			new_window(term);
@@ -352,7 +352,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Copy text: Ctrl+Shift+C */
+	/* Copy text: Ctrl+Shift+c */
 	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
 		if (event->keyval == COPY_KEY) {
 			copy_text(term);
@@ -360,7 +360,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Paste text: Ctrl+Shift+V */
+	/* Paste text: Ctrl+Shift+v */
 	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
 		if (event->keyval == PASTE_KEY) {
 			paste_text(term);
@@ -368,7 +368,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Search for text: Ctrl+Shift+F */
+	/* Search for text: Ctrl+Shift+f */
 	if ((event->state & SEARCH_ACCEL) == SEARCH_ACCEL) {
 		if (event->keyval == SEARCH_KEY) {
 			search_dialog(term);
@@ -376,7 +376,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Search for next occurrence of text: Ctrl+Shift+G */
+	/* Search for next occurrence of text: Ctrl+Shift+g */
 	if ((event->state & SEARCH_NEXT_ACCEL) == SEARCH_NEXT_ACCEL) {
 		if (event->keyval == SEARCH_NEXT_KEY) {
 			search_find_next(term);
@@ -384,7 +384,15 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Reset Terminal: Ctrl+Shift+R */
+	/* Search for previous occurrence of text: Ctrl+Shift+h */
+	if ((event->state & SEARCH_PREVIOUS_ACCEL) == SEARCH_PREVIOUS_ACCEL) {
+		if (event->keyval == SEARCH_PREVIOUS_KEY) {
+			search_find_previous(term);
+			return TRUE;
+		}
+	}
+
+	/* Reset Terminal: Ctrl+Shift+r */
 	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
 		if (event->keyval == RESET_KEY) {
 			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
@@ -392,7 +400,7 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 		}
 	}
 
-	/* Close Window: Ctrl+Shift+Q */
+	/* Close Window: Ctrl+Shift+q */
 	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
 		if (event->keyval == CLOSE_WINDOW_KEY) {
 			if (!delete_event(NULL, NULL, term)) {

@@ -10,6 +10,7 @@
 #define DEFAULT_ROWS 24
 #define DEFAULT_FONT "Monospace, 11"
 #define DEFAULT_COLOR_SCHEME "white-on-black"
+#define DEFAULT_OPACITY 100
 #define DEFAULT_TITLE_MODE "replace"
 #define PALETTE_SIZE 16
 #define SCROLL_ON_OUTPUT FALSE
@@ -33,6 +34,7 @@ enum
 #define PASTE_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define SEARCH_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define SEARCH_NEXT_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
+#define SEARCH_PREVIOUS_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define CLOSE_WINDOW_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define RESET_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define NEW_WINDOW_KEY GDK_KEY_N
@@ -40,6 +42,7 @@ enum
 #define PASTE_KEY GDK_KEY_V
 #define SEARCH_KEY GDK_KEY_F
 #define SEARCH_NEXT_KEY GDK_KEY_G
+#define SEARCH_PREVIOUS_KEY GDK_KEY_H
 #define CLOSE_WINDOW_KEY GDK_KEY_Q
 #define RESET_KEY GDK_KEY_R
 
@@ -48,6 +51,7 @@ typedef struct config {
 	char *config_file;
 	char *font;
 	char *palette;
+	int opacity;
 	int title_mode;
 	gboolean scroll_on_output;
 	gboolean scroll_on_keystroke;

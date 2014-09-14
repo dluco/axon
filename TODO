@@ -1,8 +1,11 @@
 TODO:
 -----
-- BUG: overwrite config dialog:
-	- works correctly with CTRL-SHIFT-Q, but not with window button...
+- Find Previous keybinding
 
+BUGS:
+-----
+- overwrite config dialog:
+	- works correctly with CTRL-SHIFT-Q, but not with window button...
 
 not-TODO:
 ----------

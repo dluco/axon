@@ -24,12 +24,20 @@ Terminal *terminal_new(void)
 
 void terminal_init(Terminal *term)
 {
+	GdkColormap *colormap;
+
 	/* initialize ui elements */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	term->menu = gtk_menu_new();
 	term->hbox = gtk_hbox_new(FALSE, 0);
 	term->vte = vte_terminal_new();
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
+
+	/* Get an RGBA visual (colormap) and assign it to the new window */
+	colormap = gdk_screen_get_rgba_colormap(gtk_widget_get_screen(GTK_WIDGET(term->window)));
+	if (colormap != NULL) {
+		gtk_widget_set_colormap(term->window, colormap);
+	}
 
 	/* set state variables etc */
 	term->fullscreen = FALSE;
@@ -86,6 +94,7 @@ void terminal_load_config(Terminal *term, Config *conf)
 
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	terminal_set_palette(term, conf->palette);
+	terminal_set_opacity(term, conf->opacity);
 
 	/* Scroll-related stuff */
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
@@ -175,6 +184,31 @@ void terminal_load_options(Terminal *term, Options *opts)
 	}
 }
 
+void terminal_set_font(Terminal *term, char *font)
+{
+	VteTerminal *vte;
+	int old_columns, old_rows, owidth, oheight;
+
+	vte = VTE_TERMINAL(term->vte);
+
+	/* Save column and row count before setting font */
+	old_columns = vte->column_count;
+	old_rows = vte->row_count;
+
+	/* Take into account padding and border overhead. */
+	gtk_window_get_size(GTK_WINDOW(term->window), &owidth, &oheight);
+	owidth -= vte->char_width * old_columns;
+	oheight -= vte->char_height * old_rows;
+
+	/* Apply font */
+	vte_terminal_set_font_from_string(vte, font);
+	
+	/* Restore window geometry */
+	gtk_window_resize(GTK_WINDOW(term->window),
+			old_columns * vte->char_width + owidth,
+			old_rows * vte->char_height + oheight);
+}
+
 void terminal_set_palette(Terminal *term, char *palette_name)
 {
 	GKeyFile *cfg;
@@ -260,6 +294,21 @@ void terminal_set_palette(Terminal *term, char *palette_name)
 	g_free(palette_file);
 }
 
+void terminal_set_opacity(Terminal *term, int opacity)
+{
+	unsigned short alpha = (int)((opacity / 100.0) * 65535);
+
+	if (gtk_widget_is_composited(term->window)) {
+		/* Compositing enabled */
+		vte_terminal_set_background_transparent(VTE_TERMINAL(term->vte), FALSE);
+		vte_terminal_set_opacity(VTE_TERMINAL(term->vte), alpha);
+	} else {
+		vte_terminal_set_background_transparent(VTE_TERMINAL(term->vte), opacity != 100);
+		vte_terminal_set_background_saturation(VTE_TERMINAL(term->vte),
+				1 - ((double) alpha / 65535));
+	}
+}
+
 void terminal_run(Terminal *term, char *cwd)
 {
 	int cmd_argc = 0;
@@ -340,31 +389,6 @@ void terminal_run(Terminal *term, char *cwd)
 		g_free(fork_argv[0]);
 		g_free(fork_argv[1]);
 	}
-}
-
-void terminal_set_font(Terminal *term, char *font)
-{
-	VteTerminal *vte;
-	int old_columns, old_rows, owidth, oheight;
-
-	vte = VTE_TERMINAL(term->vte);
-
-	/* Save column and row count before setting font */
-	old_columns = vte->column_count;
-	old_rows = vte->row_count;
-
-	/* Take into account padding and border overhead. */
-	gtk_window_get_size(GTK_WINDOW(term->window), &owidth, &oheight);
-	owidth -= vte->char_width * old_columns;
-	oheight -= vte->char_height * old_rows;
-
-	/* Apply font */
-	vte_terminal_set_font_from_string(vte, font);
-	
-	/* Restore window geometry */
-	gtk_window_resize(GTK_WINDOW(term->window),
-			old_columns * vte->char_width + owidth,
-			old_rows * vte->char_height + oheight);
 }
 
 void terminal_show(Terminal *term)

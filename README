@@ -17,6 +17,7 @@ Keybindings
 - Ctrl+Shift+R : Reset Terminal
 - Ctrl+Shift+F : Find Text
 - Ctrl+Shift+G : Find Next Occurrence of Text
+- Ctrl+Shift+H : Find Previous Occurrence of Text
 - Ctrl+Shift+Q : Close Window
 - F11 : Toggle Fullscreen
 - Menu : Show Context Menu (Right-Click)

@@ -33,6 +33,11 @@ void search_find_next(Terminal *term)
 	vte_terminal_search_find_next(VTE_TERMINAL(term->vte));
 }
 
+void search_find_previous(Terminal *term)
+{
+	vte_terminal_search_find_previous(VTE_TERMINAL(term->vte));
+}
+
 void search_dialog(Terminal *term)
 {
 	GtkWidget *dialog;
