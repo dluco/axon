@@ -11,27 +11,17 @@
 
 extern GSList *terminals;
 
-Terminal *terminal_new(void)
+Terminal *terminal_initialize(void)
 {
 	Terminal *term;
-
-	if (!(term = malloc(sizeof(*term)))) {
-		die("failure to allocate memory for terminal\n");
-	}
-
-	return term;
-}
-
-void terminal_init(Terminal *term)
-{
 	GdkColormap *colormap;
 
-	/* initialize ui elements */
+	/* Allocate and initialize new Terminal struct */
+	term = g_new0(Terminal, 1);
+	terminals = g_slist_append(terminals, term);
+
+	/* Create toplevel window */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	term->menu = gtk_menu_new();
-	term->hbox = gtk_hbox_new(FALSE, 0);
-	term->vte = vte_terminal_new();
-	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 
 	/* Get an RGBA visual (colormap) and assign it to the new window */
 	colormap = gdk_screen_get_rgba_colormap(gtk_widget_get_screen(GTK_WIDGET(term->window)));
@@ -39,19 +29,33 @@ void terminal_init(Terminal *term)
 		gtk_widget_set_colormap(term->window, colormap);
 	}
 
+	/* Set window title */
+	gtk_window_set_title(GTK_WINDOW(term->window), "Axon");
+
+	/* Set window icon */
+	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
+
+	/* Create horizontal box as the child of the toplevel window */
+	term->hbox = gtk_hbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(term->window), term->hbox);
+
+	/* Create VTE terminal as a child of the horizontal box */
+	term->vte = vte_terminal_new();
+	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
+
+	/* Create the scrollbar as a child of the horizontal box */
+	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
+	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
+	/* TODO: only create scrollbar if rc file says to */
+
+	/* Create popup menu */
+	term->menu = gtk_menu_new();
+	menu_popup_init(term->menu, term);
+	//TODO: term->menu = terminal_menu_popup_initialize(term);
+	
 	/* set state variables etc */
 	term->fullscreen = FALSE;
 
-	/* setup */
-	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
-
-	menu_popup_init(term->menu, term);
-	
-	/* arranging */
-	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(term->window), term->hbox);
-	
 	/* Signal setup */
 	g_signal_connect(G_OBJECT(term->window), "delete-event",
 			G_CALLBACK(delete_event), term);
@@ -76,19 +80,15 @@ void terminal_init(Terminal *term)
 			G_CALLBACK(eof), term);
 	g_signal_connect(G_OBJECT(term->vte), "window-title-changed",
 			G_CALLBACK(set_title), term);
-	g_signal_connect(G_OBJECT(term->vte), "increase-font-size",
-			G_CALLBACK(increase_font_size), term->window);
-	g_signal_connect(G_OBJECT(term->vte), "decrease-font-size",
-			G_CALLBACK(decrease_font_size), term->window);
 
-	/* Add newly init-ed terminal to list */
-	terminals = g_slist_append(terminals, term);
+	return term;
 }
 
 void terminal_load_config(Terminal *term, Config *conf)
 {
 	GRegex *regex;
 	GError *gerror = NULL;
+	int id;
 
 	term->conf = conf;
 
@@ -121,22 +121,10 @@ void terminal_load_config(Terminal *term, Config *conf)
 		g_error_free(gerror);
 		return;
 	}
-	term->regex_tags[0] = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
 	/* Release the regex owned by vte now */
 	g_regex_unref(regex);
-	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), term->regex_tags[0], GDK_HAND1);
-
-	/* Build the email regex */
-	regex = g_regex_new(EMAIL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
-	if (gerror) {
-		print_err("%s\n", gerror->message);
-		g_error_free(gerror);
-		return;
-	}
-	term->regex_tags[1] = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
-	/* Release the regex owned by vte now */
-	g_regex_unref(regex);
-	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), term->regex_tags[1], GDK_HAND1);
+	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
 }
 
 void terminal_load_options(Terminal *term, Options *opts)
@@ -150,13 +138,6 @@ void terminal_load_options(Terminal *term, Options *opts)
 		g_free(opts->title);
 	}
 	
-	if (opts->font) {
-		/* Set font in conf, but do not update key_file. */
-		term->conf->font = g_strdup(opts->font);
-		vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), opts->font);
-		g_free(opts->font);
-	}
-
 	/* Mutually exclusive options */
 	if (opts->fullscreen) {
 		/* Correctly set state of fullscreen menu item
@@ -178,10 +159,6 @@ void terminal_load_options(Terminal *term, Options *opts)
 		print_err("invalid geometry format\n");
 	}
 	g_free(geometry);
-
-	if (opts->output_file) {
-		g_object_set_data(G_OBJECT(term->vte), "output_file", opts->output_file);
-	}
 }
 
 void terminal_set_font(Terminal *term, char *font)

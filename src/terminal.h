@@ -16,11 +16,9 @@ typedef struct terminal {
 	/* state variables and widget "bookmarks" */
 	gboolean fullscreen;
 	GtkWidget *fullscreen_item;
-	gint regex_tags[2];
 } Terminal;
 
-Terminal *terminal_new(void);
-void terminal_init(Terminal *);
+Terminal *terminal_initialize(void);
 void terminal_load_config(Terminal *, Config *);
 void terminal_load_options(Terminal *, Options *);
 void terminal_set_font(Terminal *, char *);

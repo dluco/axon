@@ -34,8 +34,7 @@ static void init(Options *opts, Config *conf)
 	gtk_window_set_default_icon_name("terminal");
 
 	/* Initialize terminal instance */
-	term = terminal_new();
-	terminal_init(term);
+	term = terminal_initialize();
 	/* Load config THEN options - options get the last say */
 	terminal_load_config(term, conf);
 	terminal_load_options(term, opts);

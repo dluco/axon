@@ -7,7 +7,6 @@
 #include "terminal.h"
 #include "callback.h"
 #include "dialog.h"
-#include "search.h"
 #include "utils.h"
 
 extern GSList *terminals;
@@ -44,8 +43,7 @@ void new_window(Terminal *term)
 	char *cwd;
 	char *geometry;
 
-	Terminal *n_term = terminal_new();
-	terminal_init(n_term);
+	Terminal *n_term = terminal_initialize();
 	
 	cwd = terminal_get_cwd(term);
 	terminal_load_config(n_term, term->conf);
@@ -67,41 +65,10 @@ void new_window(Terminal *term)
 
 void destroy_window(Terminal *term)
 {
-	char *output_file;
-	GFile *file;
-	GOutputStream *stream;
-	GError *gerror = NULL;
-
 	/* Only write config to file if last window */
 	if (g_slist_length(terminals) == 1) {
 		config_save(term->conf, term->window);
 	}
-
-	/* Check if terminal has an output file attached */
-	output_file = g_object_get_data(G_OBJECT(term->vte), "output_file");
-
-	if (output_file) {
-		file = g_file_new_for_commandline_arg(output_file);
-		/* Open a new output stream for overwriting the file - NO backup is made */
-		stream = G_OUTPUT_STREAM(g_file_replace(file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &gerror));
-
-		if (stream) {
-			vte_terminal_write_contents(VTE_TERMINAL(term->vte),
-					stream, VTE_TERMINAL_WRITE_DEFAULT,
-					NULL, &gerror);
-			
-			g_object_unref(stream);
-		}
-
-		/* Catch errors from multiple functions - shouldn't have overwriting of errors */
-		if (gerror) {
-			fprintf(stderr, "%s\n", gerror->message);
-			g_error_free(gerror);
-		}
-
-		g_object_unref(file);
-	}
-
 
 	/* Remove terminal from list, destroy, and free */
 	terminals = g_slist_remove(terminals, term);
@@ -305,18 +272,9 @@ gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
 		match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
 
 		if (match != NULL) {
-			if (term->regex_tags[0] == tag) {
-				/* url match */
-				open_url(widget, match);
-				g_free(match);
-				return TRUE;
-			} else if (term->regex_tags[1] == tag) {
-				/* email match */
-				open_email(widget, match);
-				g_free(match);
-				return TRUE;
-			}
+			open_url(widget, match);
 			g_free(match);
+			return TRUE;
 		}
 		break;
 	case 2:
@@ -364,30 +322,6 @@ gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
 	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
 		if (event->keyval == PASTE_KEY) {
 			paste_text(term);
-			return TRUE;
-		}
-	}
-
-	/* Search for text: Ctrl+Shift+f */
-	if ((event->state & SEARCH_ACCEL) == SEARCH_ACCEL) {
-		if (event->keyval == SEARCH_KEY) {
-			search_dialog(term);
-			return TRUE;
-		}
-	}
-
-	/* Search for next occurrence of text: Ctrl+Shift+g */
-	if ((event->state & SEARCH_NEXT_ACCEL) == SEARCH_NEXT_ACCEL) {
-		if (event->keyval == SEARCH_NEXT_KEY) {
-			search_find_next(term);
-			return TRUE;
-		}
-	}
-
-	/* Search for previous occurrence of text: Ctrl+Shift+h */
-	if ((event->state & SEARCH_PREVIOUS_ACCEL) == SEARCH_PREVIOUS_ACCEL) {
-		if (event->keyval == SEARCH_PREVIOUS_KEY) {
-			search_find_previous(term);
 			return TRUE;
 		}
 	}
@@ -453,52 +387,24 @@ void config_file_changed(Config *conf)
 	conf->modified_externally = TRUE;
 }
 
-void palette_changed(gchar *palette_file)
-{
-	Terminal *term;
-
-	str_remove_suffix(palette_file, "theme");
-
-	g_slist_foreach(terminals, (GFunc)terminal_set_palette, palette_file);
-	
-	/* Get first terminal's config and update color_scheme*/
-	term = g_slist_nth_data(terminals, 0);
-	g_free(term->conf->palette);
-	term->conf->palette = g_strdup(palette_file);
-	config_set_value(term->conf, "color_scheme", palette_file);
-}
-
 void open_url(GtkWidget *widget, char *url)
 {
+	gchar *cmd;
 	GError *gerror = NULL;
 	GdkScreen *screen;
 
+	if (strncmp(url, "http://", 7) != 0) {
+		/* Prepend http to url or gtk_show_uri complains */
+		cmd = g_strdup_printf("http://%s", url);
+	} else {
+		cmd = g_strdup(url);
+	}
+
 	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
-	if (!gtk_show_uri(screen, url, gtk_get_current_event_time(), &gerror)) {
+	if (!gtk_show_uri(screen, cmd, gtk_get_current_event_time(), &gerror)) {
 		dialog_message(gtk_widget_get_toplevel(widget), GTK_MESSAGE_WARNING,
 				"Failed to open URL \"%s\"", url);
 		g_error_free(gerror);
 	}
-}
-
-void open_email(GtkWidget *widget, char *address)
-{
-	GError *gerror = NULL;
-	GdkScreen *screen;
-	gchar *tmp;
-
-	/* ensure that a "mailto:" prefix is present */
-	if (strncmp(address, "mailto:", 7) == 0) {
-		tmp = g_strdup(address);
-	} else {
-		tmp = g_strconcat("mailto:", address, NULL);
-	}
-
-	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
-	if (!gtk_show_uri(screen, tmp, gtk_get_current_event_time(), &gerror)) {
-		dialog_message(gtk_widget_get_toplevel(widget), GTK_MESSAGE_WARNING,
-				"Failed to open email address \"%s\"", address);
-		g_error_free(gerror);
-	}
-	g_free(tmp);
+	g_free(cmd);
 }

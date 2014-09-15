@@ -21,8 +21,6 @@ void copy_text(Terminal *);
 void paste_text(Terminal *);
 void fullscreen(Terminal *);
 void config_file_changed(Config *);
-void palette_changed(gchar *);
 void open_url(GtkWidget *, char *);
-void open_email(GtkWidget *, char *);
 
 #endif /* CALLBACK_H */

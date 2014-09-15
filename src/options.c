@@ -41,16 +41,13 @@ void options_parse(Options *opts, int argc, char *argv[])
 	GError *gerror = NULL;
 	GOptionEntry entries[] = {
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
-		{ "color-table", 0, 0, G_OPTION_ARG_NONE, &opts->colortable, "Echo color codes", NULL },
 		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a configuration file", "FILE" },
-		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &opts->output_file, "Write terminal contents to file on exit", "FILE" },
 		{ "working-directory", 'd', 0, G_OPTION_ARG_STRING, &opts->work_dir, "Set the working directory", "DIR" },
 		{ "execute", 'x', 0, G_OPTION_ARG_STRING, &opts->execute, "Execute command", NULL },
 		{ "xterm-execute", 'e', 0, G_OPTION_ARG_NONE, &opts->xterm_execute, "Execute command (last option in the command line)", NULL },
 		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &opts->xterm_args, NULL, NULL },
 		{ "login", 'l', 0, G_OPTION_ARG_NONE, &opts->login, "Login shell", NULL },
 		{ "hold", 'H', 0, G_OPTION_ARG_NONE, &opts->hold, "Hold window after execute command", NULL },
-		{ "font", 'f', 0, G_OPTION_ARG_STRING, &opts->font, "Select initial terminal font", "FONT" },
 		{ "title", 't', 0, G_OPTION_ARG_STRING, &opts->title, "Set window title", "TITLE" },
 		{ "fullscreen", 's', 0, G_OPTION_ARG_NONE, &opts->fullscreen, "Fullscreen mode", NULL },
 		{ "maximize", 'm', 0, G_OPTION_ARG_NONE, &opts->maximize, "Maximize window", NULL },
@@ -100,12 +97,6 @@ void options_parse(Options *opts, int argc, char *argv[])
 	/* Print version info and exit */
 	if (opts->version) {
 		version();
-		exit(EXIT_SUCCESS);
-	}
-
-	/* Print out color-table and exit */
-	if (opts->colortable) {
-		colortable();
 		exit(EXIT_SUCCESS);
 	}
 
