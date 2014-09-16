@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <locale.h>
 #include <langinfo.h>
@@ -15,9 +16,17 @@
 
 extern GSList *terminals;
 
+static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term);
+static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
+static void terminal_copy_text(Terminal *term);
+static void terminal_paste_text(Terminal *term);
+static void terminal_open_url(Terminal *term, char *url);
 static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
 static void terminal_eof_event(GtkWidget *vte, Terminal *term);
 static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
+static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget);
+static void terminal_new_window(Terminal *term);
+static void terminal_destroy_window(Terminal *term);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
@@ -40,7 +49,7 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 		match = vte_terminal_match_check(vte, column, row, &tag);
 
 		if (match != NULL) {
-			open_url(GTK_WIDGET(vte), match);
+			terminal_open_url(term, match);
 			g_free(match);
 			return TRUE;
 		}
@@ -73,7 +82,7 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	/* Open new window: Ctrl+Shift+n */
 	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
 		if (event->keyval == NEW_WINDOW_KEY) {
-			new_window(term);
+			terminal_new_window(term);
 			return TRUE;
 		}
 	}
@@ -81,7 +90,7 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	/* Copy text: Ctrl+Shift+c */
 	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
 		if (event->keyval == COPY_KEY) {
-			copy_text(term);
+			terminal_copy_text(term);
 			return TRUE;
 		}
 	}
@@ -89,7 +98,7 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	/* Paste text: Ctrl+Shift+v */
 	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
 		if (event->keyval == PASTE_KEY) {
-			paste_text(term);
+			terminal_paste_text(term);
 			return TRUE;
 		}
 	}
@@ -105,7 +114,7 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	/* Close Window: Ctrl+Shift+q */
 	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
 		if (event->keyval == CLOSE_WINDOW_KEY) {
-			destroy_window(term);
+			terminal_destroy_window(term);
 			return TRUE;
 		}
 	}
@@ -122,6 +131,37 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	return FALSE;
 }
 
+static void terminal_copy_text(Terminal *term)
+{
+	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
+}
+
+static void terminal_paste_text(Terminal *term)
+{
+	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
+}
+
+static void terminal_open_url(Terminal *term, char *url)
+{
+	gchar *cmd;
+	GError *gerror = NULL;
+	GdkScreen *screen;
+
+	if (strncmp(url, "http://", 7) != 0) {
+		/* Prepend http to url or gtk_show_uri complains */
+		cmd = g_strdup_printf("http://%s", url);
+	} else {
+		cmd = g_strdup(url);
+	}
+
+	screen = gtk_widget_get_screen(GTK_WIDGET(term->window));
+	if (!gtk_show_uri(screen, cmd, gtk_get_current_event_time(), &gerror)) {
+		print_err("Failed to open URL \"%s\"", url);
+		g_error_free(gerror);
+	}
+	g_free(cmd);
+}
+
 static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 {
 	int status;
@@ -134,7 +174,7 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
-	destroy_window(term);
+	terminal_destroy_window(term);
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
@@ -154,7 +194,7 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
-	destroy_window(term);
+	terminal_destroy_window(term);
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
@@ -169,10 +209,49 @@ static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term)
 	}
 }
 
-void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget)
+static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget)
 {
 	/* Widget is sensitive if text is selected */
 	gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(vte)));
+}
+
+static void terminal_new_window(Terminal *term)
+{
+	Options n_opts;
+	char *geometry;
+
+	/* Initialize n_opts */
+	memset(&n_opts, 0, sizeof(n_opts));
+
+	n_opts.work_dir = terminal_get_cwd(term);
+	Terminal *n_term = terminal_initialize(term->conf, &n_opts);
+	
+	/* Apply geometry */
+	//gtk_widget_realize(n_term->vte);
+	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
+		print_err("failed to set terminal size\n");
+	}
+	g_free(geometry);
+
+	g_free(n_opts.work_dir);
+}
+
+static void terminal_destroy_window(Terminal *term)
+{
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf);
+	}
+
+	/* Remove terminal from list, destroy, and free */
+	terminals = g_slist_remove(terminals, term);
+	gtk_widget_destroy(term->window);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		gtk_main_quit();
+	}
 }
 
 Terminal *terminal_initialize(Config *conf, Options *opts)
@@ -219,7 +298,7 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 	terminal_menu_popup_initialize(term);
 	
 	/* Connect signals */
-	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(destroy_window), term);
+	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy_window), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
 
 	if (opts->fullscreen) {
@@ -312,9 +391,9 @@ static void terminal_menu_popup_initialize(Terminal *term)
 	gtk_menu_shell_append(GTK_MENU_SHELL(term->menu), paste_item);
 
 	/* Connect signals */
-	g_signal_connect_swapped(G_OBJECT(new_window_item), "activate", G_CALLBACK(new_window), term);
-	g_signal_connect_swapped(G_OBJECT(copy_item), "activate", G_CALLBACK(copy_text), term);
-	g_signal_connect_swapped(G_OBJECT(paste_item), "activate", G_CALLBACK(paste_text), term);
+	g_signal_connect_swapped(G_OBJECT(new_window_item), "activate", G_CALLBACK(terminal_new_window), term);
+	g_signal_connect_swapped(G_OBJECT(copy_item), "activate", G_CALLBACK(terminal_copy_text), term);
+	g_signal_connect_swapped(G_OBJECT(paste_item), "activate", G_CALLBACK(terminal_paste_text), term);
 
 	/* copy_item sensitivity - only sensitive when text is selected */
 	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(terminal_selection_changed_event), copy_item);
