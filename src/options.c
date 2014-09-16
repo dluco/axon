@@ -19,14 +19,14 @@ Options *options_parse(int argc, char *argv[])
 
 	GOptionEntry entries[] = {
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
-		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a configuration file", "FILE" },
+		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a terminal configuration file", "FILE" },
 		{ "working-directory", 'd', 0, G_OPTION_ARG_STRING, &opts->work_dir, "Set the working directory", "DIR" },
-		{ "execute", 'x', 0, G_OPTION_ARG_STRING, &opts->execute, "Execute command", NULL },
-		{ "xterm-execute", 'e', 0, G_OPTION_ARG_NONE, &opts->xterm_execute, "Execute command (last option in the command line)", NULL },
-		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &opts->xterm_args, NULL, NULL },
+		{ "command", 'x', 0, G_OPTION_ARG_STRING, &opts->command, "Execute command", "COMMAND" },
+		{ "execute", 'e', 0, G_OPTION_ARG_NONE, &opts->execute, "Execute command (last option in the command line)", NULL },
+		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &opts->execute_args, NULL, NULL },
 		{ "login", 'l', 0, G_OPTION_ARG_NONE, &opts->login, "Login shell", NULL },
 		{ "title", 't', 0, G_OPTION_ARG_STRING, &opts->title, "Set window title", "TITLE" },
-		{ "fullscreen", 's', 0, G_OPTION_ARG_NONE, &opts->fullscreen, "Fullscreen mode", NULL },
+		{ "fullscreen", 'f', 0, G_OPTION_ARG_NONE, &opts->fullscreen, "Fullscreen mode", NULL },
 		{ "geometry", 'g', 0, G_OPTION_ARG_STRING, &opts->geometry, "X geometry specification", "GEOMETRY" },
 		{ NULL }
 	};
@@ -40,8 +40,8 @@ Options *options_parse(int argc, char *argv[])
 	 * ALL other options afterwards are considered part of the execute command. Therefore,
 	 * the "-e" option should ONLY be given after all other options.
 	 */
-	t_argv = calloc(argc + 1, sizeof(*t_argv));
 	t_argc = argc;
+	t_argv = calloc(argc + 1, sizeof(*t_argv));
 	n = 0;
 
 	for (i = 0; i < argc; i++) {

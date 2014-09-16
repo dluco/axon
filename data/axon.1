@@ -12,7 +12,7 @@ axon \- lightweight terminal emulator
 .B axon
 [options]
 .SH DESCRIPTION
-.I axon
+.B axon
 is a lightweight vte-based terminal emulator. It aims to be fast, simple, and light on resources.
 .SH OPTIONS
 .TP
@@ -22,40 +22,24 @@ Show help options..
 .B \-v, \-\-version
 Display version information and exit.
 .TP
-.B \-\-color-table
-Echo the color codes.
-.TP
 .BI "\-c, \-\-config " file "
 Config file to load instead of default (~/.config/axon/axonrc).
-.TP
-.BI "\-o, \-\-output " file "
-Write the contents of terminal and scrollback to
-.I file
-on exit.
 .TP
 .BI "\-d, \-\-working\-directory " dir "
 Set initial working directory.
 .TP
-.BI "\-x, \-\-execute " command "
+.BI "\-x, \-\-command " command "
 Execute
 .I command
 inside the terminal.
 .TP
-.BI "\-e, \-\-xterm\-execute " program " [ " arguments " ... ] "
-Execute
-.I program
-instead of the shell.  If this is used it must be the 
+.B \-e, \-execute
+Execute the remainder of the arguments inside the terminal.  If this is used it must be the 
 .B last option
 on the command line, as in xterm / rxvt.
 .TP
 .B \-l, \-\-login
-Start terminal shell as a login shell.
-.TP
-.B \-H, \-\-hold
-Prevent window from closing after execute command. This is useful for viewing the output of commands and examining error messages that would otherwise cause the terminal to terminate.
-.TP
-.BI "\-f, \-\-font " font "
-Defines the terminal font to use when axon is run.
+Start the terminal shell as a login shell.
 .TP
 .BI "\-t, \-\-title " title "
 Set the inital window title for the terminal (default "axon").
@@ -63,11 +47,8 @@ Set the inital window title for the terminal (default "axon").
 .B \-s, \-\-fullscreen
 Start the terminal in fullscreen mode.
 .TP
-.B \-m, \-\-maximize
-Start the terminal in a maximized state.
-.TP
 .BI "\-g, \-\-geometry " geometry "
-Set size and/or position of terminal according to X geometry specification.
+Set the size and/or position of terminal according to X geometry specification.
 .TP
 .BI "\-\-display " display "
 X display to use.
@@ -82,23 +63,11 @@ Copy selected text.
 .B Ctrl\-Shift\-v
 Paste clipboard contents into terminal.
 .TP
-.B Ctrl\-Shift\-f
-Search for text in terminal.
-.TP
-.B Ctrl\-Shift\-g
-Search for next occurrence of text in terminal.
-.TP
-.B Ctrl\-Shift\-h
-Search for previous occurrence of text in terminal.
-.TP
 .B Ctrl\-Shift\-r
 Reset terminal state and clear scrollback history.
 .TP
 .B Ctrl\-Shift\-q
 Close terminal window.
-.TP
-.B F11
-Toggle fullscreen mode.
 .TP
 .B Menu
 Show context menu (right-click).

@@ -6,4 +6,3 @@ TODO:
 	- Config
 	- Options
 	- g_ptr_array of all Terminals
-- rename xterm-execute to execute, and rename execute to command

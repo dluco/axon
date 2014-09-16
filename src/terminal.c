@@ -225,6 +225,7 @@ static void terminal_new_window(Terminal *term)
 
 	n_opts.work_dir = terminal_get_cwd(term);
 	Terminal *n_term = terminal_initialize(term->conf, &n_opts);
+	g_free(n_opts.work_dir);
 	
 	/* Apply geometry */
 	//gtk_widget_realize(n_term->vte);
@@ -233,8 +234,6 @@ static void terminal_new_window(Terminal *term)
 		print_err("failed to set terminal size\n");
 	}
 	g_free(geometry);
-
-	g_free(n_opts.work_dir);
 }
 
 static void terminal_destroy_window(Terminal *term)
@@ -571,20 +570,22 @@ void terminal_run(Terminal *term, Options *opts)
 	GError *gerror = NULL;
 	char *path;
 
-	if (opts->execute || opts->xterm_execute) {
+	if (opts->command || opts->execute) {
+		/* Check for --execute first: when both --execute and --command
+		   are given, execute takes precedence */
 		if (opts->execute) {
-			/* -x option */
-			if (!g_shell_parse_argv(opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
-				die("%s\n", gerror->message);
-			}
-		} else {
-			/* -e option - last in commandline, scoops up rest of arguments */
-			if (opts->xterm_args) {
-				cmd_joined = g_strjoinv(" ", opts->xterm_args);
+			/* -e option - last in command line, collects remainder of arguments */
+			if (opts->execute_args) {
+				cmd_joined = g_strjoinv(" ", opts->execute_args);
 				if (!g_shell_parse_argv(cmd_joined, &cmd_argc, &cmd_argv, &gerror)) {
 					die("%s\n", gerror->message);
 				}
 				g_free(cmd_joined);
+			}
+		} else {
+			/* -x option */
+			if (!g_shell_parse_argv(opts->command, &cmd_argc, &cmd_argv, &gerror)) {
+				die("%s\n", gerror->message);
 			}
 		}
 
@@ -593,8 +594,8 @@ void terminal_run(Terminal *term, Options *opts)
 			path = g_find_program_in_path(cmd_argv[0]);
 			if (path) {
 				if (!vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
-						opts->work_dir, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
-						NULL, NULL, &term->pid, &gerror)) {
+							opts->work_dir, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
+							NULL, NULL, &term->pid, &gerror)) {
 					/* Non-fatal error */
 					print_err("%s\n", gerror->message);
 				}
@@ -609,8 +610,8 @@ void terminal_run(Terminal *term, Options *opts)
 		/* No execute option */
 
 		/* Set up args in preparation for fork. Real argv vector starts at
-		 * argv[1] because we're using G_SPAWN_FILE_AND_ARGV_ZERO to be
-		 * able to launch login shells. */
+		   argv[1] because we're using G_SPAWN_FILE_AND_ARGV_ZERO to be
+		   able to launch login shells. */
 		fork_argv[0] = g_strdup(g_getenv("SHELL"));
 		if (opts->login) {
 			fork_argv[1] = g_strdup_printf("-%s", g_getenv("SHELL"));
