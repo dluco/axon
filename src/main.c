@@ -28,13 +28,10 @@ int main(int argc, char *argv[])
 	gtk_window_set_default_icon_name("terminal");
 
 	/* Load commandline options */
-	opts = options_new();
-	options_parse(opts, argc, argv);
+	opts = options_parse(argc, argv);
 
 	/* Load configuration file */
-	conf = config_new();
-	config_init(conf);
-	config_load(conf, opts->config_file);
+	conf = config_load_from_file(opts->config_file);
 
 	/* Initialize terminal instance */
 	terminal_initialize(conf, opts);
@@ -43,7 +40,6 @@ int main(int argc, char *argv[])
 	gtk_main();
 
 	/* Destroy options and config */
-	options_free(opts);
 	config_free(conf);
 
 	return 0;

@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define URL_REGEX "([\\w-]+://?|www[.])[^\\s()<>]+(?:\\([\\w\\d]+\\)|([^[:punct:]\\s]|/))"
-#define DEFAULT_WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
+#define WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
 #define DEFAULT_CONFIG_FILE "axonrc"
 #define CFG_GROUP "axon"
 #define DEFAULT_COLUMNS 80
@@ -40,7 +40,7 @@ enum
 #define CLOSE_WINDOW_KEY GDK_KEY_Q
 #define RESET_KEY GDK_KEY_R
 
-typedef struct config {
+typedef struct _config {
 	GKeyFile *cfg;
 	char *config_file;
 	char *font;
@@ -59,16 +59,13 @@ typedef struct config {
 	gboolean autohide_mouse;
 	char *word_chars;
 	gboolean modified;
-	gboolean modified_externally; /* modified by another process */
 } Config;
 
-Config *config_new(void);
-void config_init(Config *);
 void config_set_integer(Config *, const char *, int);
 void config_set_value(Config *, const char *, const char *);
 void config_set_boolean(Config *, const char *, gboolean);
-void config_load(Config *, char *);
-void config_save(Config *, GtkWidget *);
+Config *config_load_from_file(const char *user_file);
+void config_save(Config *);
 void config_free(Config *);
 
 #endif /* CONFIG_H */

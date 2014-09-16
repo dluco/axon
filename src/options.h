@@ -1,23 +1,19 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-typedef struct options {
+typedef struct _options {
 	char *work_dir;
 	char *execute;
-	gchar **xterm_args;
-	gboolean xterm_execute;
-	gboolean version;
-	gint login;
+	char **xterm_args;
 	char *title;
-	gboolean hold;
 	char *geometry;
 	char *config_file;
+	gboolean version;
+	gboolean xterm_execute;
+	gint login;
 	gboolean fullscreen;
-	gboolean maximize;
 } Options;
 
-Options *options_new(void);
-void options_free(Options *);
-void options_parse(Options *, int, char *[]);
+Options *options_parse(int argc, char *argv[]);
 
 #endif /* OPTIONS_H */

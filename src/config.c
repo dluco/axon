@@ -8,35 +8,6 @@
 #include "config.h"
 #include "utils.h"
 
-gint dialog_message_question(GtkWidget *, gchar *, ...);
-
-Config *config_new(void)
-{
-	Config *conf;
-
-	if (!(conf = malloc(sizeof(*conf)))) {
-		die("failure to allocate memory for config\n");
-	}
-
-	return conf;
-}
-
-/* Initialize Config with default values */
-void config_init(Config *conf)
-{
-	assert(conf != NULL);
-
-	conf->scroll_on_output = SCROLL_ON_OUTPUT;
-	conf->scroll_on_keystroke = SCROLL_ON_KEYSTROKE;
-	conf->show_scrollbar = SCROLLBAR;
-	conf->scrollback_lines = SCROLLBACK_LINES;
-	conf->audible_bell = AUDIBLE_BELL;
-	conf->visible_bell = VISIBLE_BELL;
-	conf->blinking_cursor = BLINKING_CURSOR;
-	conf->modified = FALSE;
-	conf->modified_externally = FALSE;
-}
-
 void config_free(Config *conf)
 {
 	g_key_file_free(conf->cfg);
@@ -62,11 +33,15 @@ void config_set_boolean(Config *conf, const char *key, gboolean value)
 	conf->modified = TRUE;
 }
 
-void config_load(Config *conf, char *user_file)
+Config *config_load_from_file(const char *user_file)
 {
+	Config *conf;
 	GError *gerror = NULL;
 	gchar *tmp = NULL;
 	char *config_dir = NULL;
+
+	/* Allocate Config */
+	conf = g_new0(Config, 1);
 
 	/* Config file initialization */
 	conf->cfg = g_key_file_new();
@@ -116,19 +91,16 @@ void config_load(Config *conf, char *user_file)
 		gerror = NULL;
 	}
 
+	/* Load key values */
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
 		config_set_value(conf, "font", DEFAULT_FONT);
 	}
-	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
-	conf->font = g_strdup(tmp);
-	free(tmp);
+	conf->font = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "color_scheme", NULL)) {
 		config_set_value(conf, "color_scheme", DEFAULT_COLOR_SCHEME);
 	}
-	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
-	conf->palette = g_strdup(tmp);
-	free(tmp);
+	conf->palette = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "opacity", NULL)) {
 		config_set_integer(conf, "opacity", DEFAULT_OPACITY);
@@ -205,37 +177,24 @@ void config_load(Config *conf, char *user_file)
 	conf->autohide_mouse = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "autohide_mouse", NULL);
 
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
-		config_set_value(conf, "word_chars", DEFAULT_WORD_CHARS);
+		config_set_value(conf, "word_chars", WORD_CHARS);
 	}
 	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
+
+	return conf;
 }
 
-void config_save(Config *conf, GtkWidget *window)
+void config_save(Config *conf)
 {
-	gint response;
-	gboolean overwrite = TRUE;
 	GError *gerror = NULL;
 
 	if (!conf->modified) {
 		/* No changes made to config */
 		return;
 	}
-	if (conf->modified_externally) {
-		/* File changed by another process */
-		response = dialog_message_question(window,
-				"Configuration has been modified by another process. Overwrite?");
 
-		if (response == GTK_RESPONSE_YES) {
-			overwrite = TRUE;
-		} else {
-			overwrite = FALSE;
-		}
-	}
-
-	if (overwrite) {
-		/* Write contents of cfg to config_file */
-		if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
-			die("%s\n", gerror->message);
-		}
+	/* Write contents of keyfile to config file */
+	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
+		die("%s\n", gerror->message);
 	}
 }

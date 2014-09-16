@@ -1,27 +1,27 @@
 [axon]
-# Terminal font: default: Monospace, 11
+# Terminal font
 font=Monospace, 11
 # Preset colorschemes (/usr/share/axon/colorschemes)
 color_scheme=white-on-black
-# Window title mode: replace (default), ignore
+# Window title mode: replace, ignore
 title_mode=replace
-# Scroll to bottom on output: false (default)
+# Scroll to bottom on output
 scroll_on_output=false
-# Scroll to bottom when a key is pressed: true (default)
+# Scroll to bottom when a key is pressed
 scroll_on_keystroke=true
-# Show the terminal scrollbar: false (default)
+# Show the terminal scrollbar
 scrollbar=false
 # Number of scrollback lines (infinite = -1)
 scrollback_lines=1024
-# Enable/Disable terminal beeping: false (default)
+# Allow the display of bold text
+allow_bold = true
+# Enable/Disable terminal beeping
 audible_bell=false
-# Enable/Disable terminal visible bell: false (default)
+# Enable/Disable terminal visible bell
 visible_bell=false
-# Enable/Disable blinking cursor: false (default)
+# Enable/Disable blinking cursor
 blinking_cursor=false
-# Style of cursor: block (default), ibeam, underline
+# Style of cursor: block, ibeam, underline
 cursor_type=block
-# Hide mouse cursor when a key is pressed: false (default)
+# Hide mouse cursor when a key is pressed
 autohide_mouse=false
-# Characters to treat as parts of words when double-clicking
-word_chars=-A-Za-z0-9,./?%&#:_=+@~

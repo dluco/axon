@@ -1,4 +1,9 @@
 TODO:
 -----
-- seg fault when opening window:
-	term(1) -> (2)term -> (3)term X seg fault
+- resize method?
+- move config file finding logic out of config.c
+- use a top-level struct to hold:
+	- Config
+	- Options
+	- g_ptr_array of all Terminals
+- rename xterm-execute to execute, and rename execute to command

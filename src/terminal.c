@@ -130,12 +130,7 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 
 	/* Only write config to file if last window */
 	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf, term->window);
-	}
-
-	if (term->opts->hold) {
-		/* Hold option activated */
-		return;
+		config_save(term->conf);
 	}
 
 	waitpid(term->pid, &status, WNOHANG);
@@ -145,7 +140,7 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
-		destroy();
+		gtk_main_quit();
 	}
 }
 
@@ -155,12 +150,7 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 
 	/* Only write config to file if last window */
 	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf, term->window);
-	}
-
-	if (term->opts->hold) {
-		/* Hold option activated */
-		return;
+		config_save(term->conf);
 	}
 	
 	waitpid(term->pid, &status, WNOHANG);
@@ -170,7 +160,7 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
-		destroy();
+		gtk_main_quit();
 	}
 }
 
@@ -181,17 +171,24 @@ static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term)
 	}
 }
 
+void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget)
+{
+	/* Widget is sensitive if text is selected */
+	gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(vte)));
+}
+
 Terminal *terminal_initialize(Config *conf, Options *opts)
 {
 	Terminal *term;
 	GdkColormap *colormap;
+	char *geometry;
 
 	/* Allocate and initialize new Terminal struct */
 	term = g_new0(Terminal, 1);
 	terminals = g_slist_append(terminals, term);
 	term->conf = conf;
 	/* TODO: remove dependency on opts */
-	term->opts = opts;
+	//term->opts = opts;
 
 	/* Create toplevel window */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -203,8 +200,8 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 	}
 
 	/* Set window title */
-	gtk_window_set_title(GTK_WINDOW(term->window), "Axon");
-
+	gtk_window_set_title(GTK_WINDOW(term->window), (opts->title) ? opts->title : "Axon");
+	
 	/* Set window icon */
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
 
@@ -223,16 +220,30 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 	/* Create popup menu */
 	terminal_menu_popup_initialize(term);
 	
-	/* set state variables etc */
-	term->fullscreen = FALSE;
-
 	/* Connect signals */
 	g_signal_connect(G_OBJECT(term->window), "delete-event", G_CALLBACK(delete_event), term);
 	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(destroy_window), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
 
+	if (opts->fullscreen) {
+		gtk_window_fullscreen(GTK_WINDOW(term->window));
+	}
+
+	/* FIXME: Apply geometry */
+	gtk_widget_realize(term->vte);
+	if (opts->geometry) {
+		geometry = g_strdup(opts->geometry);
+		g_free(opts->geometry);
+	} else {
+		geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+	}
+	if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), geometry)) {
+		print_err("invalid geometry format\n");
+	}
+	g_free(geometry);
+
 	/* Start terminal */
-	terminal_run(term, NULL);
+	terminal_run(term, opts);
 
 	/* Show and realize all widgets */
 	gtk_widget_show_all(term->window);
@@ -309,7 +320,7 @@ static void terminal_menu_popup_initialize(Terminal *term)
 	g_signal_connect_swapped(G_OBJECT(paste_item), "activate", G_CALLBACK(paste_text), term);
 
 	/* copy_item sensitivity - only sensitive when text is selected */
-	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(selection_changed), copy_item);
+	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(terminal_selection_changed_event), copy_item);
 	gtk_widget_set_sensitive(copy_item, FALSE);
 
 	gtk_widget_show_all(term->menu);
@@ -322,12 +333,23 @@ static void terminal_settings_apply(Terminal *term)
 
 	/* VTE properties */
 	vte_terminal_reset(VTE_TERMINAL(term->vte), FALSE, FALSE);
+
+	/* Font */
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
-	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
-	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
 	vte_terminal_set_allow_bold(VTE_TERMINAL(term->vte), conf->allow_bold);
+
+	/* Scrollling */
+	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
+	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
+	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
+
+	/* Cursor and mouse */
 	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte), (conf->blinking_cursor) ? VTE_CURSOR_BLINK_ON : VTE_CURSOR_BLINK_OFF);
 	vte_terminal_set_cursor_shape(VTE_TERMINAL(term->vte), conf->cursor_type);
+	vte_terminal_set_mouse_autohide(VTE_TERMINAL(term->vte), conf->autohide_mouse);
+	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
+
+	/* Bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
 
@@ -337,78 +359,6 @@ static void terminal_settings_apply(Terminal *term)
 
 	/* Show/hide the scrollbar */
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
-}
-
-void terminal_load_config(Terminal *term, Config *conf)
-{
-	GRegex *regex;
-	GError *gerror = NULL;
-	int id;
-
-	term->conf = conf;
-
-	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
-	terminal_set_palette(term, conf->palette);
-	terminal_set_opacity(term, conf->opacity);
-
-	/* Scroll-related stuff */
-	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
-	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
-	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
-
-	/* Set the (annoying) bells */
-	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
-	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
-	
-	/* Disable the (stupid) blinking cursor... */
-	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte),
-			(conf->blinking_cursor) ?
-				VTE_CURSOR_BLINK_ON :
-				VTE_CURSOR_BLINK_OFF);
-	vte_terminal_set_cursor_shape(VTE_TERMINAL(term->vte), conf->cursor_type);
-	vte_terminal_set_mouse_autohide(VTE_TERMINAL(term->vte), conf->autohide_mouse);
-	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
-
-	/* Build the url regex */
-	regex = g_regex_new(URL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &gerror);
-	if (gerror) {
-		print_err("%s\n", gerror->message);
-		g_error_free(gerror);
-		return;
-	}
-	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
-	/* Release the regex owned by vte now */
-	g_regex_unref(regex);
-	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
-}
-
-void terminal_load_options(Terminal *term, Options *opts)
-{
-	char *geometry;
-
-	term->opts = opts;
-
-	if (opts->title) {
-		gtk_window_set_title(GTK_WINDOW(term->window), opts->title);
-		g_free(opts->title);
-	}
-	
-	if (opts->maximize) {
-		gtk_window_maximize(GTK_WINDOW(term->window));
-	}
-
-	/* Apply geometry */
-	gtk_widget_realize(term->vte);
-	if (opts->geometry) {
-		geometry = g_strdup(opts->geometry);
-		g_free(opts->geometry);
-	} else {
-		geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
-	}
-	if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), geometry)) {
-		print_err("invalid geometry format\n");
-	}
-	g_free(geometry);
 }
 
 void terminal_set_font(Terminal *term, char *font)
@@ -536,7 +486,7 @@ void terminal_set_opacity(Terminal *term, int opacity)
 	}
 }
 
-void terminal_run(Terminal *term, char *cwd)
+void terminal_run(Terminal *term, Options *opts)
 {
 	int cmd_argc = 0;
 	char **cmd_argv;
@@ -545,31 +495,21 @@ void terminal_run(Terminal *term, char *cwd)
 	GError *gerror = NULL;
 	char *path;
 
-	if (!cwd) {
-		cwd = g_get_current_dir();
-	}
-
-	if (term->opts->execute || term->opts->xterm_execute) {
-		if (term->opts->execute) {
+	if (opts->execute || opts->xterm_execute) {
+		if (opts->execute) {
 			/* -x option */
-			if (!g_shell_parse_argv(term->opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
+			if (!g_shell_parse_argv(opts->execute, &cmd_argc, &cmd_argv, &gerror)) {
 				die("%s\n", gerror->message);
 			}
-			/* Reset for new windows */
-			g_free(term->opts->execute);
-			term->opts->execute = FALSE;
 		} else {
 			/* -e option - last in commandline, scoops up rest of arguments */
-			if (term->opts->xterm_args) {
-				cmd_joined = g_strjoinv(" ", term->opts->xterm_args);
+			if (opts->xterm_args) {
+				cmd_joined = g_strjoinv(" ", opts->xterm_args);
 				if (!g_shell_parse_argv(cmd_joined, &cmd_argc, &cmd_argv, &gerror)) {
 					die("%s\n", gerror->message);
 				}
 				g_free(cmd_joined);
 			}
-			/* Reset for new windows */
-			g_strfreev(term->opts->xterm_args);
-			term->opts->xterm_execute = FALSE;
 		}
 
 		/* Check for a valid command */
@@ -577,7 +517,7 @@ void terminal_run(Terminal *term, char *cwd)
 			path = g_find_program_in_path(cmd_argv[0]);
 			if (path) {
 				if (!vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
-						NULL, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
+						opts->work_dir, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
 						NULL, NULL, &term->pid, &gerror)) {
 					/* Non-fatal error */
 					print_err("%s\n", gerror->message);
@@ -591,18 +531,12 @@ void terminal_run(Terminal *term, char *cwd)
 		}
 	} else { 
 		/* No execute option */
-		if (term->opts->hold) {
-			print_err("hold option given without any command\n");
-			term->opts->hold = FALSE;
-		}
 
-		/* 
-		 * Set up args in preparation for fork. Real argv vector starts at
+		/* Set up args in preparation for fork. Real argv vector starts at
 		 * argv[1] because we're using G_SPAWN_FILE_AND_ARGV_ZERO to be
-		 * able to launch login shells.
-		 */
+		 * able to launch login shells. */
 		fork_argv[0] = g_strdup(g_getenv("SHELL"));
-		if (term->opts->login) {
+		if (opts->login) {
 			fork_argv[1] = g_strdup_printf("-%s", g_getenv("SHELL"));
 		} else {
 			fork_argv[1] = g_strdup(g_getenv("SHELL"));
@@ -610,19 +544,12 @@ void terminal_run(Terminal *term, char *cwd)
 		fork_argv[2] = NULL;
 
 		vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
-				cwd, fork_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_FILE_AND_ARGV_ZERO,
+				opts->work_dir, fork_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_FILE_AND_ARGV_ZERO,
 				NULL, NULL, &term->pid, NULL);
 		
 		g_free(fork_argv[0]);
 		g_free(fork_argv[1]);
 	}
-}
-
-void terminal_show(Terminal *term)
-{
-	gtk_widget_show_all(term->window);
-	(term->conf->show_scrollbar) ?
-			gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 }
 
 /* Retrieve the cwd of the specified term page.

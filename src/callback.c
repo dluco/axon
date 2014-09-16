@@ -9,11 +9,6 @@
 
 extern GSList *terminals;
 
-void destroy(void)
-{
-	gtk_main_quit();
-}
-
 gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
 {
 	gint response;
@@ -38,30 +33,31 @@ gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
 
 void new_window(Terminal *term)
 {
+	Options n_opts;
 	char *geometry;
 
-	if (term->opts->work_dir) {
-		g_free(term->opts->work_dir);
-	}
-	term->opts->work_dir = terminal_get_cwd(term);
-	Terminal *n_term = terminal_initialize(term->conf, term->opts);
+	/* Initialize n_opts */
+	memset(&n_opts, 0, sizeof(n_opts));
+
+	n_opts.work_dir = terminal_get_cwd(term);
+	Terminal *n_term = terminal_initialize(term->conf, &n_opts);
 	
 	/* Apply geometry */
-	gtk_widget_realize(n_term->vte);
+	//gtk_widget_realize(n_term->vte);
 	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
 	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
 		print_err("failed to set terminal size\n");
 	}
 	g_free(geometry);
 
-	g_free(term->opts->work_dir);
+	g_free(n_opts.work_dir);
 }
 
 void destroy_window(Terminal *term)
 {
 	/* Only write config to file if last window */
 	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf, term->window);
+		config_save(term->conf);
 	}
 
 	/* Remove terminal from list, destroy, and free */
@@ -70,7 +66,7 @@ void destroy_window(Terminal *term)
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
-		destroy();
+		gtk_main_quit();
 	}
 }
 
@@ -184,11 +180,6 @@ void decrease_font_size(GtkWidget *terminal, GtkWidget *window)
 	adjust_font_size(terminal, window, -1);
 }
 
-void selection_changed(GtkWidget *terminal, GtkWidget *widget)
-{
-	gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(terminal)));
-}
-
 void copy_text(Terminal *term)
 {
 	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
@@ -197,17 +188,6 @@ void copy_text(Terminal *term)
 void paste_text(Terminal *term)
 {
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
-}
-
-void fullscreen(Terminal *term)
-{
-	if (term->fullscreen == FALSE) {
-		term->fullscreen = TRUE;
-		gtk_window_fullscreen(GTK_WINDOW(term->window));
-	} else {
-		gtk_window_unfullscreen(GTK_WINDOW(term->window));
-		term->fullscreen = FALSE;
-	}
 }
 
 void open_url(GtkWidget *widget, char *url)

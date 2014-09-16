@@ -1,41 +1,22 @@
-#include <assert.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
 #include "options.h"
 #include "utils.h"
 
-Options *options_new(void)
+Options *options_parse(int argc, char *argv[])
 {
-	Options *opts = g_new0(Options, 1);
-
-	/*
-	opts->xterm_execute = FALSE;
-	opts->version = FALSE;
-	opts->login = FALSE;
-	opts->hold = FALSE;
-	*/
-
-	return opts;
-}
-
-void options_free(Options *opts)
-{
-	assert(opts != NULL);
-
-	g_free(opts);
-}
-
-void options_parse(Options *opts, int argc, char *argv[])
-{
-	int i;
-	int n;
+	Options *opts;
+	GOptionContext *context;
+	GError *gerror = NULL;
+	int i, n;
 	int t_argc;
 	char **t_argv;
 	gboolean match = FALSE;
 
-	GOptionContext *context;
-	GError *gerror = NULL;
+	/* Allocate Options */
+	opts = g_new0(Options, 1);
+
 	GOptionEntry entries[] = {
 		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
 		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a configuration file", "FILE" },
@@ -44,10 +25,8 @@ void options_parse(Options *opts, int argc, char *argv[])
 		{ "xterm-execute", 'e', 0, G_OPTION_ARG_NONE, &opts->xterm_execute, "Execute command (last option in the command line)", NULL },
 		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &opts->xterm_args, NULL, NULL },
 		{ "login", 'l', 0, G_OPTION_ARG_NONE, &opts->login, "Login shell", NULL },
-		{ "hold", 'H', 0, G_OPTION_ARG_NONE, &opts->hold, "Hold window after execute command", NULL },
 		{ "title", 't', 0, G_OPTION_ARG_STRING, &opts->title, "Set window title", "TITLE" },
 		{ "fullscreen", 's', 0, G_OPTION_ARG_NONE, &opts->fullscreen, "Fullscreen mode", NULL },
-		{ "maximize", 'm', 0, G_OPTION_ARG_NONE, &opts->maximize, "Maximize window", NULL },
 		{ "geometry", 'g', 0, G_OPTION_ARG_STRING, &opts->geometry, "X geometry specification", "GEOMETRY" },
 		{ NULL }
 	};
@@ -94,8 +73,10 @@ void options_parse(Options *opts, int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 
-	/* I don't care if chdir fails - continue anyways */
-	if (opts->work_dir) {
-		chdir(opts->work_dir);
+	/* A working directory must always be provided */
+	if (!opts->work_dir) {
+		opts->work_dir = g_get_current_dir();
 	}
+
+	return opts;
 }
