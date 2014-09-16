@@ -34,10 +34,6 @@ main.o: main.c
 	@echo $(CC) -c main.c
 	@$(CC) $(CFLAGS) main.c
 
-menu.o: menu.c
-	@echo $(CC) -c menu.c
-	@$(CC) $(CFLAGS) menu.c
-
 options.o: options.c
 	@echo $(CC) -c options.c
 	@$(CC) $(CFLAGS) options.c

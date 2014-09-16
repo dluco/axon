@@ -11,6 +11,9 @@
 
 extern GSList *terminals;
 
+static void terminal_menu_popup_initialize(Terminal *term);
+
+//Terminal *terminal_initialize(Options *opts, Config *conf)
 Terminal *terminal_initialize(void)
 {
 	Terminal *term;
@@ -44,14 +47,16 @@ Terminal *terminal_initialize(void)
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
 
 	/* Create the scrollbar as a child of the horizontal box */
+	/*if (conf->show_scrollbar) {
+		term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
+		gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
+	}
+	*/
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
-	/* TODO: only create scrollbar if rc file says to */
 
 	/* Create popup menu */
-	term->menu = gtk_menu_new();
-	menu_popup_init(term->menu, term);
-	//TODO: term->menu = terminal_menu_popup_initialize(term);
+	terminal_menu_popup_initialize(term);
 	
 	/* set state variables etc */
 	term->fullscreen = FALSE;
@@ -82,6 +87,64 @@ Terminal *terminal_initialize(void)
 			G_CALLBACK(set_title), term);
 
 	return term;
+}
+
+/* Initialize the popup menu */
+static void terminal_menu_popup_initialize(Terminal *term)
+{
+	GtkWidget *new_window_item,
+			*copy_item, *paste_item;
+	GtkWidget *separator;
+	GtkWidget *new_window_image;
+
+	term->menu = gtk_menu_new();
+
+	new_window_item = gtk_image_menu_item_new_with_mnemonic("Open _Terminal");
+	copy_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_COPY, NULL);
+	paste_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_PASTE, NULL);
+
+	/* Icon for new window item */
+	new_window_image = gtk_image_new_from_icon_name("window-new", GTK_ICON_SIZE_MENU);
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(new_window_item), new_window_image);
+
+	/* Add items to menu */
+	gtk_menu_shell_append(GTK_MENU_SHELL(term->menu), new_window_item);
+	separator = gtk_separator_menu_item_new();
+	gtk_menu_shell_append(GTK_MENU_SHELL(term->menu), separator);
+	gtk_menu_shell_append(GTK_MENU_SHELL(term->menu), copy_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(term->menu), paste_item);
+
+	/* Connect signals */
+	g_signal_connect_swapped(G_OBJECT(new_window_item), "activate", G_CALLBACK(new_window), term);
+	g_signal_connect_swapped(G_OBJECT(copy_item), "activate", G_CALLBACK(copy_text), term);
+	g_signal_connect_swapped(G_OBJECT(paste_item), "activate", G_CALLBACK(paste_text), term);
+
+	/* copy_item sensitivity - only sensitive when text is selected */
+	g_signal_connect(G_OBJECT(term->vte), "selection-changed", G_CALLBACK(selection_changed), copy_item);
+	gtk_widget_set_sensitive(copy_item, FALSE);
+
+	gtk_widget_show_all(term->menu);
+}
+
+/* Apply settings to a Terminal */
+static void terminal_settings_apply(Terminal *term)
+{
+	Config *conf = term->conf;
+
+	/* VTE properties */
+	vte_terminal_reset(VTE_TERMINAL(term->vte), FALSE, FALSE);
+	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
+	vte_terminal_set_word_chars(VTE_TERMINAL(term->vte), conf->word_chars);
+	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
+	vte_terminal_set_allow_bold(VTE_TERMINAL(term->vte), conf->allow_bold);
+	vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(term->vte), (conf->blinking_cursor) ? VTE_CURSOR_BLINK_ON : VTE_CURSOR_BLINK_OFF);
+	vte_terminal_set_cursor_shape(VTE_TERMINAL(term->vte), conf->cursor_type);
+	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
+	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
+
+	terminal_set_palette(term, conf->palette);
+	terminal_set_opacity(term, conf->opacity);
+
 }
 
 void terminal_load_config(Terminal *term, Config *conf)

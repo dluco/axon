@@ -9,7 +9,6 @@ typedef struct options {
 	gboolean version;
 	gint login;
 	char *title;
-	int rows, columns;
 	gboolean hold;
 	char *geometry;
 	char *config_file;

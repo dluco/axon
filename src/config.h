@@ -8,14 +8,15 @@
 #define DEFAULT_COLUMNS 80
 #define DEFAULT_ROWS 24
 #define DEFAULT_FONT "Monospace, 11"
+#define PALETTE_SIZE 16
 #define DEFAULT_COLOR_SCHEME "white-on-black"
 #define DEFAULT_OPACITY 100
 #define DEFAULT_TITLE_MODE "replace"
-#define PALETTE_SIZE 16
 #define SCROLL_ON_OUTPUT FALSE
 #define SCROLL_ON_KEYSTROKE TRUE
 #define SCROLLBAR FALSE
 #define SCROLLBACK_LINES 1024
+#define ALLOW_BOLD TRUE
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
@@ -50,6 +51,7 @@ typedef struct config {
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;
 	int scrollback_lines;
+	gboolean allow_bold;
 	gboolean audible_bell;
 	gboolean visible_bell;
 	gboolean blinking_cursor;
