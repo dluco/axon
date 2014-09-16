@@ -4,32 +4,9 @@
 
 #include "terminal.h"
 #include "callback.h"
-#include "dialog.h"
 #include "utils.h"
 
 extern GSList *terminals;
-
-gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
-{
-	gint response;
-	pid_t pgid;
-	
-	pgid = tcgetpgrp(vte_terminal_get_pty(VTE_TERMINAL(term->vte)));
-
-	/* If running processes are found, ask before proceeding */
-	if (pgid != -1 && pgid != term->pid) {
-		response = dialog_message_question(term->window,
-				"There are still processes running in this terminal. Do you really want to close?");
-
-		if (response == GTK_RESPONSE_YES) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
-
-	return FALSE;	
-}
 
 void new_window(Terminal *term)
 {
@@ -205,8 +182,7 @@ void open_url(GtkWidget *widget, char *url)
 
 	screen = gtk_widget_get_screen(GTK_WIDGET(widget));
 	if (!gtk_show_uri(screen, cmd, gtk_get_current_event_time(), &gerror)) {
-		dialog_message(gtk_widget_get_toplevel(widget), GTK_MESSAGE_WARNING,
-				"Failed to open URL \"%s\"", url);
+		print_err("Failed to open URL \"%s\"", url);
 		g_error_free(gerror);
 	}
 	g_free(cmd);

@@ -1,7 +1,6 @@
 #ifndef CALLBACK_H
 #define CALLBACK_H
 
-gboolean delete_event(GtkWidget *, GdkEvent *, Terminal *);
 void new_window(Terminal *);
 void destroy_window(Terminal *);
 void char_size_changed(GtkWidget *, guint, guint, gpointer);

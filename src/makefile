@@ -26,10 +26,6 @@ config.o: config.c
 	@echo $(CC) -c config.c
 	@$(CC) $(CFLAGS) config.c
 
-dialog.o: dialog.c
-	@echo $(CC) -c dialog.c
-	@$(CC) $(CFLAGS) dialog.c
-
 main.o: main.c
 	@echo $(CC) -c main.c
 	@$(CC) $(CFLAGS) main.c

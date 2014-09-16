@@ -69,7 +69,7 @@ Options *options_parse(int argc, char *argv[])
 
 	/* Print version info and exit */
 	if (opts->version) {
-		version();
+		printf("axon - %s, 2014 David Luco <dluco11@gmail.com>\n", VERSION);
 		exit(EXIT_SUCCESS);
 	}
 

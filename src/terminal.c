@@ -105,9 +105,7 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 	/* Close Window: Ctrl+Shift+q */
 	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
 		if (event->keyval == CLOSE_WINDOW_KEY) {
-			if (!delete_event(NULL, NULL, term)) {
-				destroy_window(term);
-			}
+			destroy_window(term);
 			return TRUE;
 		}
 	}
@@ -221,7 +219,6 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 	terminal_menu_popup_initialize(term);
 	
 	/* Connect signals */
-	g_signal_connect(G_OBJECT(term->window), "delete-event", G_CALLBACK(delete_event), term);
 	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(destroy_window), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
 
