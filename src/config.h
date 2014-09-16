@@ -17,6 +17,7 @@
 #define SCROLL_ON_KEYSTROKE TRUE
 #define SCROLLBAR FALSE
 #define SCROLLBACK_LINES 1024
+#define ALLOW_BOLD TRUE
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
@@ -57,6 +58,7 @@ typedef struct config {
 	gboolean scroll_on_keystroke;
 	gboolean show_scrollbar;
 	int scrollback_lines;
+	gboolean allow_bold;
 	gboolean audible_bell;
 	gboolean visible_bell;
 	gboolean blinking_cursor;

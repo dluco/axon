@@ -101,6 +101,8 @@ void terminal_load_config(Terminal *term, Config *conf)
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
 
+	vte_terminal_set_allow_bold(VTE_TERMINAL(term->vte), conf->allow_bold);
+
 	/* Set the (annoying) bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);

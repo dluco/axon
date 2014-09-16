@@ -166,6 +166,11 @@ void config_load(Config *conf, char *user_file)
 	}
 	conf->scrollback_lines = g_key_file_get_integer(conf->cfg, CFG_GROUP, "scrollback_lines", NULL);
 
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "allow_bold", NULL)) {
+		config_set_boolean(conf, "allow_bold", ALLOW_BOLD);
+	}
+	conf->allow_bold = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "allow_bold", NULL);
+
 	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
 		config_set_boolean(conf, "audible_bell", AUDIBLE_BELL);
 	}
