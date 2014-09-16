@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/wait.h>
+#include <locale.h>
+#include <langinfo.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+#include <gdk/gdkkeysyms.h>
 #include <glib/gstdio.h>
 
 #include "terminal.h"
@@ -11,10 +15,173 @@
 
 extern GSList *terminals;
 
+static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
+static void terminal_eof_event(GtkWidget *vte, Terminal *term);
+static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
+static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
+static void terminal_settings_apply(Terminal *term);
 
-//Terminal *terminal_initialize(Options *opts, Config *conf)
-Terminal *terminal_initialize(void)
+static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term)
+{
+	glong column, row;
+	gchar *match;
+	gint tag;
+
+	if (event->type != GDK_BUTTON_PRESS) {
+		return FALSE;
+	}
+	
+	switch(event->button) {
+	case 1:
+		/* find out if the cursor was over a matched expression */
+		column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
+		row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
+		match = vte_terminal_match_check(vte, column, row, &tag);
+
+		if (match != NULL) {
+			open_url(GTK_WIDGET(vte), match);
+			g_free(match);
+			return TRUE;
+		}
+		break;
+	case 2:
+		break;
+	case 3:
+		/* Right button: show popup menu */
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+		return TRUE;
+	default:
+		break;
+	}
+
+	return FALSE;
+}
+
+static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term)
+{
+	if (event->type != GDK_KEY_PRESS) {
+		return FALSE;
+	}
+
+	/* Check if Caps-Lock is enabled - change keyval
+	   to work with upper/lowercase. */
+	if (gdk_keymap_get_caps_lock_state(gdk_keymap_get_default())) {
+		event->keyval = gdk_keyval_to_upper(event->keyval);
+	}
+
+	/* Open new window: Ctrl+Shift+n */
+	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
+		if (event->keyval == NEW_WINDOW_KEY) {
+			new_window(term);
+			return TRUE;
+		}
+	}
+
+	/* Copy text: Ctrl+Shift+c */
+	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
+		if (event->keyval == COPY_KEY) {
+			copy_text(term);
+			return TRUE;
+		}
+	}
+
+	/* Paste text: Ctrl+Shift+v */
+	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
+		if (event->keyval == PASTE_KEY) {
+			paste_text(term);
+			return TRUE;
+		}
+	}
+
+	/* Reset Terminal: Ctrl+Shift+r */
+	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
+		if (event->keyval == RESET_KEY) {
+			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
+			return TRUE;
+		}
+	}
+
+	/* Close Window: Ctrl+Shift+q */
+	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
+		if (event->keyval == CLOSE_WINDOW_KEY) {
+			if (!delete_event(NULL, NULL, term)) {
+				destroy_window(term);
+			}
+			return TRUE;
+		}
+	}
+
+	/* Keybindings without modifiers */
+	switch(event->keyval) {
+	case GDK_KEY_Menu:
+		/* Menu popup */
+		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL,
+				NULL, NULL, event->keyval, event->time);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
+{
+	int status;
+
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf, term->window);
+	}
+
+	if (term->opts->hold) {
+		/* Hold option activated */
+		return;
+	}
+
+	waitpid(term->pid, &status, WNOHANG);
+	/* TODO: check wait return */
+
+	destroy_window(term);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		destroy();
+	}
+}
+
+static void terminal_eof_event(GtkWidget *vte, Terminal *term)
+{
+	int status;
+
+	/* Only write config to file if last window */
+	if (g_slist_length(terminals) == 1) {
+		config_save(term->conf, term->window);
+	}
+
+	if (term->opts->hold) {
+		/* Hold option activated */
+		return;
+	}
+	
+	waitpid(term->pid, &status, WNOHANG);
+	/* TODO: check wait return */
+
+	destroy_window(term);
+
+	/* Destroy if no windows left */
+	if (g_slist_length(terminals) == 0) {
+		destroy();
+	}
+}
+
+static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term)
+{
+	if (term->conf->title_mode == TITLE_MODE_REPLACE) {
+		gtk_window_set_title(GTK_WINDOW(term->window), vte_terminal_get_window_title(VTE_TERMINAL(vte)));
+	}
+}
+
+Terminal *terminal_initialize(Config *conf, Options *opts)
 {
 	Terminal *term;
 	GdkColormap *colormap;
@@ -22,6 +189,9 @@ Terminal *terminal_initialize(void)
 	/* Allocate and initialize new Terminal struct */
 	term = g_new0(Terminal, 1);
 	terminals = g_slist_append(terminals, term);
+	term->conf = conf;
+	/* TODO: remove dependency on opts */
+	term->opts = opts;
 
 	/* Create toplevel window */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -43,15 +213,10 @@ Terminal *terminal_initialize(void)
 	gtk_container_add(GTK_CONTAINER(term->window), term->hbox);
 
 	/* Create VTE terminal as a child of the horizontal box */
-	term->vte = vte_terminal_new();
+	terminal_vte_initialize(term);
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
 
 	/* Create the scrollbar as a child of the horizontal box */
-	/*if (conf->show_scrollbar) {
-		term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
-		gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
-	}
-	*/
 	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
 
@@ -61,32 +226,56 @@ Terminal *terminal_initialize(void)
 	/* set state variables etc */
 	term->fullscreen = FALSE;
 
-	/* Signal setup */
-	g_signal_connect(G_OBJECT(term->window), "delete-event",
-			G_CALLBACK(delete_event), term);
-	g_signal_connect_swapped(G_OBJECT(term->window), "destroy",
-			G_CALLBACK(destroy_window), term);
-	g_signal_connect(G_OBJECT(term->window), "key-press-event",
-			G_CALLBACK(key_press), term);
+	/* Connect signals */
+	g_signal_connect(G_OBJECT(term->window), "delete-event", G_CALLBACK(delete_event), term);
+	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(destroy_window), term);
+	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
+
+	/* Start terminal */
+	terminal_run(term, NULL);
+
+	/* Show and realize all widgets */
+	gtk_widget_show_all(term->window);
+
+	/* Update terminal settings */
+	terminal_settings_apply(term);
+
+	return term;
+}
+
+static void terminal_vte_initialize(Terminal *term)
+{
+	GRegex *regex;
+	gint id;
+
+	/* Create VTE */
+	term->vte = vte_terminal_new();
+
+	/* Set up VTE */
+	setlocale(LC_ALL, "");
+	vte_terminal_set_emulation(VTE_TERMINAL(term->vte), "xterm");
+	vte_terminal_set_encoding(VTE_TERMINAL(term->vte), nl_langinfo(CODESET));
+    vte_terminal_set_backspace_binding(VTE_TERMINAL(term->vte), VTE_ERASE_ASCII_DELETE);
+    vte_terminal_set_delete_binding(VTE_TERMINAL(term->vte), VTE_ERASE_DELETE_SEQUENCE);
+
+	/* Match urls */
+	regex = g_regex_new(URL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
+	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
+	g_regex_unref(regex);
+
 
 	/* Connect to the "char-size-changed" signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
 	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
-	g_signal_connect(G_OBJECT(term->vte), "char-size-changed",
-			G_CALLBACK(char_size_changed), term->window);
-	g_signal_connect(G_OBJECT(term->vte), "realize",
-			G_CALLBACK(char_size_realized), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(char_size_changed), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(char_size_realized), term->window);
 
-	g_signal_connect(G_OBJECT(term->vte), "button-press-event",
-			G_CALLBACK(button_press), term);
-	g_signal_connect(G_OBJECT(term->vte), "child-exited",
-			G_CALLBACK(child_exited), term);
-	g_signal_connect(G_OBJECT(term->vte), "eof",
-			G_CALLBACK(eof), term);
-	g_signal_connect(G_OBJECT(term->vte), "window-title-changed",
-			G_CALLBACK(set_title), term);
-
-	return term;
+	/* Connect signals */
+	g_signal_connect(G_OBJECT(term->vte), "button-press-event", G_CALLBACK(terminal_button_press_event), term);
+	g_signal_connect(G_OBJECT(term->vte), "child-exited", G_CALLBACK(terminal_child_exited_event), term);
+	g_signal_connect(G_OBJECT(term->vte), "eof", G_CALLBACK(terminal_eof_event), term);
+	g_signal_connect(G_OBJECT(term->vte), "window-title-changed", G_CALLBACK(terminal_window_title_changed_event), term);
 }
 
 /* Initialize the popup menu */
@@ -142,9 +331,12 @@ static void terminal_settings_apply(Terminal *term)
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
 
+	/* Set VTE colors and opacity */
 	terminal_set_palette(term, conf->palette);
 	terminal_set_opacity(term, conf->opacity);
 
+	/* Show/hide the scrollbar */
+	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 }
 
 void terminal_load_config(Terminal *term, Config *conf)
@@ -201,12 +393,7 @@ void terminal_load_options(Terminal *term, Options *opts)
 		g_free(opts->title);
 	}
 	
-	/* Mutually exclusive options */
-	if (opts->fullscreen) {
-		/* Correctly set state of fullscreen menu item
-		 * and trigger callback function */
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item), TRUE);
-	} else if (opts->maximize) {
+	if (opts->maximize) {
 		gtk_window_maximize(GTK_WINDOW(term->window));
 	}
 

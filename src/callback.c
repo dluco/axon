@@ -1,7 +1,5 @@
 #include <string.h>
-#include <sys/wait.h>
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
 #include <vte/vte.h>
 
 #include "terminal.h"
@@ -40,14 +38,13 @@ gboolean delete_event(GtkWidget *widget, GdkEvent *event, Terminal *term)
 
 void new_window(Terminal *term)
 {
-	char *cwd;
 	char *geometry;
 
-	Terminal *n_term = terminal_initialize();
-	
-	cwd = terminal_get_cwd(term);
-	terminal_load_config(n_term, term->conf);
-	n_term->opts = term->opts;
+	if (term->opts->work_dir) {
+		g_free(term->opts->work_dir);
+	}
+	term->opts->work_dir = terminal_get_cwd(term);
+	Terminal *n_term = terminal_initialize(term->conf, term->opts);
 	
 	/* Apply geometry */
 	gtk_widget_realize(n_term->vte);
@@ -57,10 +54,7 @@ void new_window(Terminal *term)
 	}
 	g_free(geometry);
 
-	terminal_run(n_term, cwd);
-	terminal_show(n_term);
-
-	g_free(cwd);
+	g_free(term->opts->work_dir);
 }
 
 void destroy_window(Terminal *term)
@@ -77,65 +71,6 @@ void destroy_window(Terminal *term)
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
 		destroy();
-	}
-}
-
-void child_exited(GtkWidget *terminal, Terminal *term)
-{
-	int status;
-
-	/* Only write config to file if last window */
-	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf, term->window);
-	}
-
-	if (term->opts->hold) {
-		/* Hold option activated */
-		return;
-	}
-
-	waitpid(term->pid, &status, WNOHANG);
-	/* TODO: check wait return */
-
-	destroy_window(term);
-
-	/* Destroy if no windows left */
-	if (g_slist_length(terminals) == 0) {
-		destroy();
-	}
-}
-
-/* Required when using multiple terminals */
-void eof(GtkWidget *terminal, Terminal *term)
-{
-	int status;
-
-	/* Only write config to file if last window */
-	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf, term->window);
-	}
-
-	if (term->opts->hold) {
-		/* Hold option activated */
-		return;
-	}
-	
-	waitpid(term->pid, &status, WNOHANG);
-	/* TODO: check wait return */
-
-	destroy_window(term);
-
-	/* Destroy if no windows left */
-	if (g_slist_length(terminals) == 0) {
-		destroy();
-	}
-}
-
-void set_title(GtkWidget *terminal, Terminal *term)
-{
-	if (term->conf->title_mode == TITLE_MODE_REPLACE) {
-		gtk_window_set_title(GTK_WINDOW(term->window),
-				vte_terminal_get_window_title(VTE_TERMINAL(terminal)));
 	}
 }
 
@@ -254,113 +189,6 @@ void selection_changed(GtkWidget *terminal, GtkWidget *widget)
 	gtk_widget_set_sensitive(widget, vte_terminal_get_has_selection(VTE_TERMINAL(terminal)));
 }
 
-gboolean button_press(GtkWidget *widget, GdkEventButton *event, Terminal *term)
-{
-	glong column, row;
-	gchar *match;
-	gint tag;
-
-	if (event->type != GDK_BUTTON_PRESS) {
-		return FALSE;
-	}
-	
-	switch(event->button) {
-	case 1:
-		/* find out if the cursor was over a matched expression */
-		column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
-		row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
-		match = vte_terminal_match_check(VTE_TERMINAL(term->vte), column, row, &tag);
-
-		if (match != NULL) {
-			open_url(widget, match);
-			g_free(match);
-			return TRUE;
-		}
-		break;
-	case 2:
-		break;
-	case 3:
-		/* Right button: show popup menu */
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
-		return TRUE;
-	default:
-		break;
-	}
-
-	return FALSE;
-}
-
-gboolean key_press(GtkWidget *widget, GdkEventKey *event, Terminal *term)
-{
-	if (event->type != GDK_KEY_PRESS) {
-		return FALSE;
-	}
-
-	/* Check if Caps-Lock is enabled - change keyval
-	   to work with upper/lowercase. */
-	if (gdk_keymap_get_caps_lock_state(gdk_keymap_get_default())) {
-		event->keyval = gdk_keyval_to_upper(event->keyval);
-	}
-
-	/* Open new window: Ctrl+Shift+n */
-	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
-		if (event->keyval == NEW_WINDOW_KEY) {
-			new_window(term);
-			return TRUE;
-		}
-	}
-
-	/* Copy text: Ctrl+Shift+c */
-	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
-		if (event->keyval == COPY_KEY) {
-			copy_text(term);
-			return TRUE;
-		}
-	}
-
-	/* Paste text: Ctrl+Shift+v */
-	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
-		if (event->keyval == PASTE_KEY) {
-			paste_text(term);
-			return TRUE;
-		}
-	}
-
-	/* Reset Terminal: Ctrl+Shift+r */
-	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
-		if (event->keyval == RESET_KEY) {
-			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
-			return TRUE;
-		}
-	}
-
-	/* Close Window: Ctrl+Shift+q */
-	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
-		if (event->keyval == CLOSE_WINDOW_KEY) {
-			if (!delete_event(NULL, NULL, term)) {
-				destroy_window(term);
-			}
-			return TRUE;
-		}
-	}
-
-	/* Keybindings without modifiers */
-	switch(event->keyval) {
-	case GDK_KEY_F11:
-		/* Fullscreen */
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(term->fullscreen_item),
-				!term->fullscreen);
-		return TRUE;
-	case GDK_KEY_Menu:
-		/* Menu popup */
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL,
-				NULL, NULL, event->keyval, event->time);
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 void copy_text(Terminal *term)
 {
 	vte_terminal_copy_clipboard(VTE_TERMINAL(term->vte));
@@ -380,11 +208,6 @@ void fullscreen(Terminal *term)
 		gtk_window_unfullscreen(GTK_WINDOW(term->window));
 		term->fullscreen = FALSE;
 	}
-}
-
-void config_file_changed(Config *conf)
-{
-	conf->modified_externally = TRUE;
 }
 
 void open_url(GtkWidget *widget, char *url)

@@ -13,49 +13,19 @@
 
 GSList *terminals = NULL;
 
-static void init(Options *opts, Config *conf)
+int main(int argc, char *argv[])
 {
-	Terminal *term;
-	GFile *cfgfile;
-	GFileMonitor *cfgfile_monitor;
+	Config *conf;
+	Options *opts;
 
-	/* Add GFile monitor to control external file changes */
-	cfgfile = g_file_new_for_path(conf->config_file);
-	cfgfile_monitor = g_file_monitor_file(cfgfile, 0, NULL, NULL);
-	g_signal_connect_swapped(G_OBJECT(cfgfile_monitor), "changed",
-			G_CALLBACK(config_file_changed), conf);
-
-	/* FIXME: set TERM env-variable? */
-
+	/* Initialize GTK+ */
+	gtk_init(&argc, &argv);
+	
 	/* Set name of application */
 	g_set_application_name("axon");
 
 	/* Set default window icon for all windows */
 	gtk_window_set_default_icon_name("terminal");
-
-	/* Initialize terminal instance */
-	term = terminal_initialize();
-	/* Load config THEN options - options get the last say */
-	terminal_load_config(term, conf);
-	terminal_load_options(term, opts);
-	terminal_run(term, NULL);
-
-	terminal_show(term);
-}
-
-static void cleanup(Options *opts, Config *conf)
-{
-	/* Destroy options and config */
-	options_free(opts);
-	config_free(conf);
-}
-
-int main(int argc, char *argv[])
-{
-	Options *opts;
-	Config *conf;
-	
-	setlocale(LC_ALL, "");
 
 	/* Load commandline options */
 	opts = options_new();
@@ -66,14 +36,15 @@ int main(int argc, char *argv[])
 	config_init(conf);
 	config_load(conf, opts->config_file);
 
-	/* Perform initialization */
-	init(opts, conf);
-	
+	/* Initialize terminal instance */
+	terminal_initialize(conf, opts);
+
 	/* Run GTK main loop */
 	gtk_main();
 
-	/* Perform cleanup */
-	cleanup(opts, conf);
+	/* Destroy options and config */
+	options_free(opts);
+	config_free(conf);
 
 	return 0;
 }

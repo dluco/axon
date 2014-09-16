@@ -15,10 +15,9 @@ typedef struct terminal {
 	GPid pid;
 	/* state variables and widget "bookmarks" */
 	gboolean fullscreen;
-	GtkWidget *fullscreen_item;
 } Terminal;
 
-Terminal *terminal_initialize(void);
+Terminal *terminal_initialize(Config *conf, Options *opts);
 void terminal_load_config(Terminal *, Config *);
 void terminal_load_options(Terminal *, Options *);
 void terminal_set_font(Terminal *, char *);

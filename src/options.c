@@ -7,17 +7,14 @@
 
 Options *options_new(void)
 {
-	Options *opts;
+	Options *opts = g_new0(Options, 1);
 
-	if (!(opts = malloc(sizeof(*opts)))) {
-		die("failure to allocate memory for options\n");
-	}
-
-	/* set initial values - don't bother with init function */
+	/*
 	opts->xterm_execute = FALSE;
 	opts->version = FALSE;
 	opts->login = FALSE;
 	opts->hold = FALSE;
+	*/
 
 	return opts;
 }
@@ -88,9 +85,6 @@ void options_parse(Options *opts, int argc, char *argv[])
 		die("%s\n", gerror->message);
 	}
 	g_option_context_free(context);
-
-	/* Initialize GTK+ */
-	gtk_init(&t_argc, &t_argv);
 
 	g_strfreev(t_argv);
 

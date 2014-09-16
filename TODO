@@ -1,4 +1,4 @@
 TODO:
 -----
-- remove fullscreen settings
-- add "allow_bold" to config file
+- seg fault when opening window:
+	term(1) -> (2)term -> (3)term X seg fault
