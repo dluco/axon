@@ -263,8 +263,6 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 	term = g_new0(Terminal, 1);
 	terminals = g_slist_append(terminals, term);
 	term->conf = conf;
-	/* TODO: remove dependency on opts */
-	//term->opts = opts;
 
 	/* Create toplevel window */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -304,7 +302,7 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 		gtk_window_fullscreen(GTK_WINDOW(term->window));
 	}
 
-	/* FIXME: Apply geometry */
+	// FIXME: Apply geometry
 	gtk_widget_realize(term->vte);
 	if (opts->geometry) {
 		geometry = g_strdup(opts->geometry);
@@ -353,9 +351,9 @@ static void terminal_vte_initialize(Terminal *term)
 
 	/* Connect to the "char-size-changed" signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
-	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
-	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(char_size_changed), term->window);
-	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(char_size_realized), term->window);
+//	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
+//	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(char_size_changed), term->window);
+//	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(char_size_realized), term->window);
 
 	/* Connect signals */
 	g_signal_connect(G_OBJECT(term->vte), "button-press-event", G_CALLBACK(terminal_button_press_event), term);
@@ -434,31 +432,6 @@ static void terminal_settings_apply(Terminal *term)
 
 	/* Show/hide the scrollbar */
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
-}
-
-void terminal_set_font(Terminal *term, char *font)
-{
-	VteTerminal *vte;
-	int old_columns, old_rows, owidth, oheight;
-
-	vte = VTE_TERMINAL(term->vte);
-
-	/* Save column and row count before setting font */
-	old_columns = vte->column_count;
-	old_rows = vte->row_count;
-
-	/* Take into account padding and border overhead. */
-	gtk_window_get_size(GTK_WINDOW(term->window), &owidth, &oheight);
-	owidth -= vte->char_width * old_columns;
-	oheight -= vte->char_height * old_rows;
-
-	/* Apply font */
-	vte_terminal_set_font_from_string(vte, font);
-	
-	/* Restore window geometry */
-	gtk_window_resize(GTK_WINDOW(term->window),
-			old_columns * vte->char_width + owidth,
-			old_rows * vte->char_height + oheight);
 }
 
 void terminal_set_palette(Terminal *term, char *palette_name)
