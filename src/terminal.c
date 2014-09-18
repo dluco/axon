@@ -20,6 +20,7 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
 static void terminal_copy_text(Terminal *term);
 static void terminal_paste_text(Terminal *term);
+static void terminal_fullscreen(Terminal *term);
 static void terminal_open_url(Terminal *term, char *url);
 static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
 static void terminal_eof_event(GtkWidget *vte, Terminal *term);
@@ -121,7 +122,11 @@ static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, 
 
 	/* Keybindings without modifiers */
 	switch(event->keyval) {
-	case GDK_KEY_Menu:
+	case FULLSCREEN_KEY:
+		/* Toggle fullscreen */
+		terminal_fullscreen(term);
+		return TRUE;
+	case MENU_KEY:
 		/* Menu popup */
 		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL,
 				NULL, NULL, event->keyval, event->time);
@@ -139,6 +144,17 @@ static void terminal_copy_text(Terminal *term)
 static void terminal_paste_text(Terminal *term)
 {
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
+}
+
+static void terminal_fullscreen(Terminal *term)
+{
+	if (term->fullscreen == FALSE) {
+		term->fullscreen = TRUE;
+		gtk_window_fullscreen(GTK_WINDOW(term->window));
+	} else {
+		term->fullscreen = FALSE;
+		gtk_window_unfullscreen(GTK_WINDOW(term->window));
+	}
 }
 
 static void terminal_open_url(Terminal *term, char *url)

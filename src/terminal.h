@@ -13,6 +13,7 @@ typedef struct _terminal {
 	Config *conf; /* associated Config */
 	Options *opts; /* associated Options */
 	GPid pid;
+	gboolean fullscreen; /* fullscreen state */
 } Terminal;
 
 Terminal *terminal_initialize(Config *conf, Options *opts);

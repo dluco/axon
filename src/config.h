@@ -39,6 +39,8 @@ enum
 #define PASTE_KEY GDK_KEY_V
 #define CLOSE_WINDOW_KEY GDK_KEY_Q
 #define RESET_KEY GDK_KEY_R
+#define FULLSCREEN_KEY GDK_KEY_F11
+#define MENU_KEY GDK_KEY_Menu
 
 typedef struct _config {
 	GKeyFile *cfg;
