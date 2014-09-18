@@ -1,0 +1,19 @@
+_axon() {
+
+	local cur=${COMP_WORDS[COMP_CWORD]}
+	
+	local short_opts=(-v -c -d -x -e -l -t -f -g)
+	local long_opts=(--version --config --working-directory --command
+			--execute --login --title --fullscreen --geometry  --display)
+
+	if [[ "$cur" == --* ]]; then
+		COMPREPLY=( $(compgen -W "$long_opts" -- $cur) )
+		return 0
+	fi
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$short_opts" -- $cur) )
+	fi
+	
+}
+complete -F _axon axon
