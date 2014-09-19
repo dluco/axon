@@ -18,17 +18,9 @@ axon: $(OBJ)
 	@echo $(CC) -o ${OUT}
 	@$(CC) $(OBJ) $(LDFLAGS) -o ${OUT}
 
-callback.o: callback.c
-	@echo $(CC) -c callback.c
-	@$(CC) $(CFLAGS) callback.c
-
 config.o: config.c
 	@echo $(CC) -c config.c
 	@$(CC) $(CFLAGS) config.c
-
-main.o: main.c
-	@echo $(CC) -c main.c
-	@$(CC) $(CFLAGS) main.c
 
 options.o: options.c
 	@echo $(CC) -c options.c
@@ -37,10 +29,6 @@ options.o: options.c
 terminal.o: terminal.c
 	@echo $(CC) -c terminal.c
 	@$(CC) $(CFLAGS) terminal.c
-
-search.o: search.c
-	@echo $(CC) -c search.c
-	@$(CC) $(CFLAGS) search.c
 
 utils.o: utils.c
 	@echo $(CC) -c utils.c

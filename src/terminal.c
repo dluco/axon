@@ -10,12 +10,12 @@
 #include <glib/gstdio.h>
 
 #include "terminal.h"
-#include "callback.h"
-#include "menu.h"
 #include "utils.h"
 
-extern GSList *terminals;
+GSList *terminals;
 
+static void terminal_char_size_changed(GtkWidget *terminal, guint width, guint height, gpointer data);
+static void terminal_char_size_realized(GtkWidget *terminal, gpointer data);
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term);
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
 static void terminal_copy_text(Terminal *term);
@@ -31,6 +31,72 @@ static void terminal_destroy_window(Terminal *term);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
+
+/* The size of a character in the terminal has changed - reset geometry hints */
+static void terminal_char_size_changed(GtkWidget *terminal, guint width, guint height, gpointer data)
+{
+	GtkWindow *window;
+	GdkGeometry geometry;
+	GtkBorder *inner_border;
+
+	g_assert(GTK_IS_WINDOW(data));
+	g_assert(VTE_IS_TERMINAL(terminal));
+
+	window = GTK_WINDOW(data);
+	if (!gtk_widget_get_realized(GTK_WIDGET (window))) {
+		return;
+	}
+
+	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
+	/* Resize increments - equal to one character in either direction */
+	geometry.width_inc = width;
+	geometry.height_inc = height;
+	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
+	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
+	geometry.min_width = geometry.base_width + width * 2;
+	geometry.min_height = geometry.base_height + height * 2;
+	gtk_border_free(inner_border);
+
+	gtk_window_set_geometry_hints(window, terminal, &geometry,
+			GDK_HINT_RESIZE_INC |
+			GDK_HINT_BASE_SIZE |
+			GDK_HINT_MIN_SIZE);
+}
+
+static void terminal_char_size_realized(GtkWidget *terminal, gpointer data)
+{
+	VteTerminal *vte;
+	GtkWindow *window;
+	GdkGeometry geometry;
+	guint width, height;
+	GtkBorder *inner_border;
+
+	g_assert(GTK_IS_WINDOW(data));
+	g_assert(VTE_IS_TERMINAL(terminal));
+
+	vte = VTE_TERMINAL(terminal);
+	window = GTK_WINDOW(data);
+	if (!gtk_widget_get_realized(GTK_WIDGET(window))) {
+		return;
+	}
+
+	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
+	width = vte_terminal_get_char_width(vte);
+	height = vte_terminal_get_char_height(vte);
+	/* Resize increments - equal to one character in either direction */
+	geometry.width_inc = width;
+	geometry.height_inc = height;
+	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
+	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
+	geometry.min_width = geometry.base_width + width * 2;
+	geometry.min_height = geometry.base_height + height * 2;
+	gtk_border_free(inner_border);
+
+	gtk_window_set_geometry_hints(window, terminal, &geometry,
+			GDK_HINT_RESIZE_INC |
+			GDK_HINT_BASE_SIZE |
+			GDK_HINT_MIN_SIZE);
+}
 
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term)
 {
@@ -367,9 +433,9 @@ static void terminal_vte_initialize(Terminal *term)
 
 	/* Connect to the "char-size-changed" signal to set geometry hints
 	 * whenever the font used by the terminal is changed. */
-//	char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
-//	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(char_size_changed), term->window);
-//	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(char_size_realized), term->window);
+	terminal_char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
+	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(terminal_char_size_changed), term->window);
+	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(terminal_char_size_realized), term->window);
 
 	/* Connect signals */
 	g_signal_connect(G_OBJECT(term->vte), "button-press-event", G_CALLBACK(terminal_button_press_event), term);
@@ -656,4 +722,37 @@ char *terminal_get_cwd(Terminal *term)
 	}
 
 	return cwd;
+}
+
+/* Main entry point for program */
+int main(int argc, char *argv[])
+{
+	Config *conf;
+	Options *opts;
+
+	/* Initialize GTK+ */
+	gtk_init(&argc, &argv);
+	
+	/* Set name of application */
+	g_set_application_name("axon");
+
+	/* Set default window icon for all windows */
+	gtk_window_set_default_icon_name("terminal");
+
+	/* Load commandline options */
+	opts = options_parse(argc, argv);
+
+	/* Load configuration file */
+	conf = config_load_from_file(opts->config_file);
+
+	/* Initialize terminal instance */
+	terminal_initialize(conf, opts);
+
+	/* Run GTK main loop */
+	gtk_main();
+
+	/* Destroy options and config */
+	config_free(conf);
+
+	return 0;
 }
