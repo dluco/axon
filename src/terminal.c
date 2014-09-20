@@ -14,8 +14,6 @@
 
 GSList *terminals;
 
-static void terminal_char_size_changed(GtkWidget *terminal, guint width, guint height, gpointer data);
-static void terminal_char_size_realized(GtkWidget *terminal, gpointer data);
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term);
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
 static void terminal_copy_text(Terminal *term);
@@ -31,72 +29,6 @@ static void terminal_destroy_window(Terminal *term);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
-
-/* The size of a character in the terminal has changed - reset geometry hints */
-static void terminal_char_size_changed(GtkWidget *terminal, guint width, guint height, gpointer data)
-{
-	GtkWindow *window;
-	GdkGeometry geometry;
-	GtkBorder *inner_border;
-
-	g_assert(GTK_IS_WINDOW(data));
-	g_assert(VTE_IS_TERMINAL(terminal));
-
-	window = GTK_WINDOW(data);
-	if (!gtk_widget_get_realized(GTK_WIDGET (window))) {
-		return;
-	}
-
-	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
-	/* Resize increments - equal to one character in either direction */
-	geometry.width_inc = width;
-	geometry.height_inc = height;
-	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
-	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
-	geometry.min_width = geometry.base_width + width * 2;
-	geometry.min_height = geometry.base_height + height * 2;
-	gtk_border_free(inner_border);
-
-	gtk_window_set_geometry_hints(window, terminal, &geometry,
-			GDK_HINT_RESIZE_INC |
-			GDK_HINT_BASE_SIZE |
-			GDK_HINT_MIN_SIZE);
-}
-
-static void terminal_char_size_realized(GtkWidget *terminal, gpointer data)
-{
-	VteTerminal *vte;
-	GtkWindow *window;
-	GdkGeometry geometry;
-	guint width, height;
-	GtkBorder *inner_border;
-
-	g_assert(GTK_IS_WINDOW(data));
-	g_assert(VTE_IS_TERMINAL(terminal));
-
-	vte = VTE_TERMINAL(terminal);
-	window = GTK_WINDOW(data);
-	if (!gtk_widget_get_realized(GTK_WIDGET(window))) {
-		return;
-	}
-
-	gtk_widget_style_get(terminal, "inner-border", &inner_border, NULL);
-	width = vte_terminal_get_char_width(vte);
-	height = vte_terminal_get_char_height(vte);
-	/* Resize increments - equal to one character in either direction */
-	geometry.width_inc = width;
-	geometry.height_inc = height;
-	geometry.base_width = inner_border ? (inner_border->left + inner_border->right) : 0;
-	geometry.base_height = inner_border ? (inner_border->top + inner_border->bottom) : 0;
-	geometry.min_width = geometry.base_width + width * 2;
-	geometry.min_height = geometry.base_height + height * 2;
-	gtk_border_free(inner_border);
-
-	gtk_window_set_geometry_hints(window, terminal, &geometry,
-			GDK_HINT_RESIZE_INC |
-			GDK_HINT_BASE_SIZE |
-			GDK_HINT_MIN_SIZE);
-}
 
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term)
 {
@@ -339,6 +271,8 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 {
 	Terminal *term;
 	GdkColormap *colormap;
+	GdkGeometry hints;
+	GtkBorder *border;
 	char *geometry;
 
 	/* Allocate and initialize new Terminal struct */
@@ -384,6 +318,31 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 		gtk_window_fullscreen(GTK_WINDOW(term->window));
 	}
 
+	/* Start terminal */
+	terminal_run(term, opts);
+
+	/* Show and realize all widgets */
+	gtk_widget_show_all(term->window);
+
+	/* Apply terminal settings - must be after show_all
+	   because of scrollbar visibility. */
+	terminal_settings_apply(term);
+
+	/* Set geometry hints */
+	gtk_widget_style_get(term->vte, "inner-border", &border, NULL);
+	hints.width_inc = vte_terminal_get_char_width(VTE_TERMINAL(term->vte));  
+	hints.height_inc = vte_terminal_get_char_height(VTE_TERMINAL(term->vte));
+	hints.base_width = border->right + 1;
+	hints.base_height = border->bottom + 1;
+	hints.min_width = hints.base_width + hints.width_inc * 4;
+	hints.min_height = hints.base_height + hints.height_inc * 2;
+	gtk_border_free(border);
+
+	gtk_window_set_geometry_hints(GTK_WINDOW(term->window),
+			term->vte,
+			&hints,
+			GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+
 	// FIXME: Apply geometry
 	gtk_widget_realize(term->vte);
 	if (opts->geometry) {
@@ -396,15 +355,6 @@ Terminal *terminal_initialize(Config *conf, Options *opts)
 		print_err("invalid geometry format\n");
 	}
 	g_free(geometry);
-
-	/* Start terminal */
-	terminal_run(term, opts);
-
-	/* Show and realize all widgets */
-	gtk_widget_show_all(term->window);
-
-	/* Update terminal settings */
-	terminal_settings_apply(term);
 
 	return term;
 }
@@ -429,13 +379,6 @@ static void terminal_vte_initialize(Terminal *term)
 	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
 	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
 	g_regex_unref(regex);
-
-
-	/* Connect to the "char-size-changed" signal to set geometry hints
-	 * whenever the font used by the terminal is changed. */
-	terminal_char_size_changed(GTK_WIDGET(term->vte), 0, 0, term->window);
-	g_signal_connect(G_OBJECT(term->vte), "char-size-changed", G_CALLBACK(terminal_char_size_changed), term->window);
-	g_signal_connect(G_OBJECT(term->vte), "realize", G_CALLBACK(terminal_char_size_realized), term->window);
 
 	/* Connect signals */
 	g_signal_connect(G_OBJECT(term->vte), "button-press-event", G_CALLBACK(terminal_button_press_event), term);
