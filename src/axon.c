@@ -35,12 +35,8 @@ static void terminal_set_palette(Terminal *term, char *palette_name);
 static void terminal_set_opacity(Terminal *term, int opacity);
 static void terminal_run(Terminal *term, Options *opts);
 static char *terminal_get_cwd(Terminal *term);
-static void config_set_integer(Config *, const char *, int);
-static void config_set_value(Config *, const char *, const char *);
-static void config_set_boolean(Config *, const char *, gboolean);
+static void config_initialize(Config *conf);
 static Config *config_load_from_file(const char *user_file);
-static void config_save(Config *);
-static void config_free(Config *);
 static Options *options_parse(int argc, char *argv[]);
 
 static void die(const char *errstr, ...)
@@ -216,11 +212,6 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 {
 	int status;
 
-	/* Only write config to file if last window */
-	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf);
-	}
-
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
@@ -236,11 +227,6 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 {
 	int status;
 
-	/* Only write config to file if last window */
-	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf);
-	}
-	
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
@@ -288,11 +274,6 @@ static void terminal_new_window(Terminal *term)
 
 static void terminal_destroy_window(Terminal *term)
 {
-	/* Only write config to file if last window */
-	if (g_slist_length(terminals) == 1) {
-		config_save(term->conf);
-	}
-
 	/* Remove terminal from list, destroy, and free */
 	terminals = g_slist_remove(terminals, term);
 	gtk_widget_destroy(term->window);
@@ -703,43 +684,39 @@ static char *terminal_get_cwd(Terminal *term)
 	return cwd;
 }
 
-static void config_free(Config *conf)
+/* Set default values for Config */
+static void config_initialize(Config *conf)
 {
-	g_key_file_free(conf->cfg);
-	g_free(conf->config_file);
-	g_free(conf->font);
-}
-
-static void config_set_integer(Config *conf, const char *key, int value)
-{
-	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);
-	conf->modified = TRUE;
-}
-
-static void config_set_value(Config *conf, const char *key, const char *value)
-{
-	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);
-	conf->modified = TRUE;
-}
-
-static void config_set_boolean(Config *conf, const char *key, gboolean value)
-{
-	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);
-	conf->modified = TRUE;
+	conf->font = DEFAULT_FONT;
+	conf->palette = DEFAULT_COLOR_SCHEME;
+	conf->opacity = DEFAULT_OPACITY;
+	conf->title_mode = DEFAULT_TITLE_MODE;
+	conf->scroll_on_output = SCROLL_ON_OUTPUT;
+	conf->scroll_on_keystroke = SCROLL_ON_KEYSTROKE;
+	conf->show_scrollbar = SCROLLBAR;
+	conf->scrollback_lines = SCROLLBACK_LINES;
+	conf->allow_bold = ALLOW_BOLD;
+	conf->audible_bell = AUDIBLE_BELL;
+	conf->visible_bell = VISIBLE_BELL;
+	conf->blinking_cursor = BLINKING_CURSOR;
+	conf->cursor_type = DEFAULT_CURSOR_TYPE;
+	conf->autohide_mouse = AUTOHIDE_MOUSE;
+	conf->word_chars = WORD_CHARS;
 }
 
 static Config *config_load_from_file(const char *user_file)
 {
 	Config *conf;
-	GError *gerror = NULL;
+	GKeyFile *keyfile;
 	gchar *tmp = NULL;
-	char *config_dir = NULL;
+	char *config_file = NULL;
+	GError *gerror = NULL;
 
 	/* Allocate Config */
 	conf = g_new0(Config, 1);
 
-	/* Config file initialization */
-	conf->cfg = g_key_file_new();
+	/* Initialize Config with default values, in case we can't load a file */
+	config_initialize(conf);
 
 	if (user_file) {
 		/*
@@ -748,150 +725,127 @@ static Config *config_load_from_file(const char *user_file)
 		 */
 		if (g_path_is_absolute(user_file)) {
 			/* Absolute path was given */
-			conf->config_file = g_strdup(user_file);
+			config_file = g_strdup(user_file);
 		} else {
 			/* Relative path to file was given - prepend current directory */
 			tmp = g_get_current_dir();
-			conf->config_file = g_build_filename(tmp, user_file, NULL);
+			config_file = g_build_filename(tmp, user_file, NULL);
 			g_free(tmp);
 		}
 		/* Test if user supplied config file actually exists and is not a directory */
-		if (!g_file_test(conf->config_file, G_FILE_TEST_IS_REGULAR)) {
+		if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR)) {
 			print_err("invalid config file \"%s\"\n", user_file);
 		}
 	} else {
-		config_dir = g_build_filename(g_get_user_config_dir(), "axon", NULL);
+		/* Try $XDG_CONFIG_HOME/axon/axonrc */
+		config_file = g_build_filename(g_get_user_config_dir(), "axon", DEFAULT_CONFIG_FILE, NULL);
 
-		if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
-			/* ~/.config does not exist - create it */
-			g_mkdir(g_get_user_config_dir(), 0755);
+		/* Check if file exists */
+		if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR)) {
+			/* Try $HOME/.config/axon/axonrc */
+			g_free(config_file);
+			config_file = g_build_filename(g_get_home_dir(), ".config", "axon", DEFAULT_CONFIG_FILE, NULL);
+			/* Check if file exists */
+			if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR)) {
+				/* No config file available - defaults will be used */
+				g_free(config_file);
+				return conf;
+			}
 		}
-		if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
-			/* Program config dir does not exist - create it */
-			g_mkdir(config_dir, 0755);
-		}
-		conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
-		
-		g_free(config_dir);
 	}
+
+	/* Initialize keyfile */
+	keyfile = g_key_file_new();
 
 	/* Open config file */
-	if (!g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
-		/* If file does not exist, then ignore - one will be created */
-		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
-			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
-			die("invalid config file format\n");
-		}
+	if (!g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+		/* Couldn't open config file - defaults will be used */
+		print_err("error opening config file\n");
 		g_error_free(gerror);
-		gerror = NULL;
+		g_free(config_file);
+		return conf;
 	}
+
+	g_free(config_file);
 
 	/* Load key values */
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
-		config_set_value(conf, "font", DEFAULT_FONT);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "font", NULL)) {
+		conf->font = g_key_file_get_value(keyfile, CFG_GROUP, "font", NULL);
 	}
-	conf->font = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "color_scheme", NULL)) {
-		config_set_value(conf, "color_scheme", DEFAULT_COLOR_SCHEME);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "color_scheme", NULL)) {
+		conf->palette = g_key_file_get_value(keyfile, CFG_GROUP, "color_scheme", NULL);
 	}
-	conf->palette = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "opacity", NULL)) {
-		config_set_integer(conf, "opacity", DEFAULT_OPACITY);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "opacity", NULL)) {
+		conf->opacity = g_key_file_get_integer(keyfile, CFG_GROUP, "opacity", NULL);
 	}
-	conf->opacity = g_key_file_get_integer(conf->cfg, CFG_GROUP, "opacity", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "title_mode", NULL)) {
-		config_set_value(conf, "title_mode", DEFAULT_TITLE_MODE);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "title_mode", NULL)) {
+		tmp = g_key_file_get_value(keyfile, CFG_GROUP, "title_mode", NULL);
+		if (strcmp(tmp, "replace") == 0) {
+			conf->title_mode = TITLE_MODE_REPLACE;
+		} else {
+			conf->title_mode = TITLE_MODE_IGNORE;
+		}
+		free(tmp);
 	}
-	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "title_mode", NULL);
-	if (strcmp(tmp, "replace") == 0) {
-		conf->title_mode = TITLE_MODE_REPLACE;
-	} else {
-		conf->title_mode = TITLE_MODE_IGNORE;
-	}
-	free(tmp);
 	
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {
-		config_set_boolean(conf, "scroll_on_output", SCROLL_ON_OUTPUT);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "scroll_on_output", NULL)) {
+		conf->scroll_on_output = g_key_file_get_boolean(keyfile, CFG_GROUP, "scroll_on_output", NULL);
 	}
-	conf->scroll_on_output = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_output", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL)) {
-		config_set_boolean(conf, "scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "scroll_on_keystroke", NULL)) {
+		conf->scroll_on_keystroke = g_key_file_get_boolean(keyfile, CFG_GROUP, "scroll_on_keystroke", NULL);
 	}
-	conf->scroll_on_keystroke = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollbar", NULL)) {
-		config_set_boolean(conf, "scrollbar", SCROLLBAR);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "scrollbar", NULL)) {
+		conf->show_scrollbar = g_key_file_get_boolean(keyfile, CFG_GROUP, "scrollbar", NULL);
 	}
-	conf->show_scrollbar = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scrollbar", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollback_lines", NULL)) {
-		config_set_integer(conf, "scrollback_lines", SCROLLBACK_LINES);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "scrollback_lines", NULL)) {
+		conf->scrollback_lines = g_key_file_get_integer(keyfile, CFG_GROUP, "scrollback_lines", NULL);
 	}
-	conf->scrollback_lines = g_key_file_get_integer(conf->cfg, CFG_GROUP, "scrollback_lines", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "allow_bold", NULL)) {
-		config_set_boolean(conf, "allow_bold", ALLOW_BOLD);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "allow_bold", NULL)) {
+		conf->allow_bold = g_key_file_get_boolean(keyfile, CFG_GROUP, "allow_bold", NULL);
 	}
-	conf->allow_bold = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "allow_bold", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
-		config_set_boolean(conf, "audible_bell", AUDIBLE_BELL);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "audible_bell", NULL)) {
+		conf->audible_bell = g_key_file_get_boolean(keyfile, CFG_GROUP, "audible_bell", NULL);
 	}
-	conf->audible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visible_bell", NULL)) {
-		config_set_boolean(conf, "visible_bell", VISIBLE_BELL);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "visible_bell", NULL)) {
+		conf->visible_bell = g_key_file_get_boolean(keyfile, CFG_GROUP, "visible_bell", NULL);
 	}
-	conf->visible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
-		config_set_boolean(conf, "blinking_cursor", BLINKING_CURSOR);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "blinking_cursor", NULL)) {
+		conf->blinking_cursor = g_key_file_get_boolean(keyfile, CFG_GROUP, "blinking_cursor", NULL);
 	}
-	conf->blinking_cursor = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
-		config_set_value(conf, "cursor_type", DEFAULT_CURSOR_TYPE);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "cursor_type", NULL)) {
+		tmp = g_key_file_get_value(keyfile, CFG_GROUP, "cursor_type", NULL);
+		if (strcmp(tmp, "block") == 0) {
+			conf->cursor_type = VTE_CURSOR_SHAPE_BLOCK;
+		} else if (strcmp(tmp , "underline") == 0) {
+			conf->cursor_type = VTE_CURSOR_SHAPE_UNDERLINE;
+		} else if (strcmp(tmp, "beam") == 0) {
+			conf->cursor_type = VTE_CURSOR_SHAPE_IBEAM;
+		}
+		free(tmp);
 	}
-	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "cursor_type", NULL);
-	if (strcmp(tmp, "beam") == 0) {
-		conf->cursor_type = VTE_CURSOR_SHAPE_IBEAM;
-	} else if (strcmp(tmp , "underline") == 0) {
-		conf->cursor_type = VTE_CURSOR_SHAPE_UNDERLINE;
-	} else {
-		conf->cursor_type = VTE_CURSOR_SHAPE_BLOCK;
-	}
-	free(tmp);
 	
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "autohide_mouse", NULL)) {
-		config_set_boolean(conf, "autohide_mouse", AUTOHIDE_MOUSE);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "autohide_mouse", NULL)) {
+		conf->autohide_mouse = g_key_file_get_boolean(keyfile, CFG_GROUP, "autohide_mouse", NULL);
 	}
-	conf->autohide_mouse = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "autohide_mouse", NULL);
 
-	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
-		config_set_value(conf, "word_chars", WORD_CHARS);
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "word_chars", NULL)) {
+		conf->word_chars = g_key_file_get_value(keyfile, CFG_GROUP, "word_chars", NULL);
 	}
-	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
+
+	g_key_file_free(keyfile);
 
 	return conf;
-}
-
-static void config_save(Config *conf)
-{
-	GError *gerror = NULL;
-
-	if (!conf->modified) {
-		/* No changes made to config */
-		return;
-	}
-
-	/* Write contents of keyfile to config file */
-	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
-		die("%s\n", gerror->message);
-	}
 }
 
 static Options *options_parse(int argc, char *argv[])
@@ -997,9 +951,6 @@ int main(int argc, char *argv[])
 
 	/* Run GTK main loop */
 	gtk_main();
-
-	/* Destroy options and config */
-	config_free(conf);
 
 	return 0;
 }

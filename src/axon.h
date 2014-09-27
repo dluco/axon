@@ -11,7 +11,6 @@
 #define PALETTE_SIZE 16
 #define DEFAULT_COLOR_SCHEME "white-on-black"
 #define DEFAULT_OPACITY 100
-#define DEFAULT_TITLE_MODE "replace"
 #define SCROLL_ON_OUTPUT FALSE
 #define SCROLL_ON_KEYSTROKE TRUE
 #define SCROLLBAR FALSE
@@ -20,7 +19,7 @@
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
-#define DEFAULT_CURSOR_TYPE "block"
+#define DEFAULT_CURSOR_TYPE VTE_CURSOR_SHAPE_BLOCK
 #define AUTOHIDE_MOUSE FALSE
 
 enum
@@ -28,6 +27,7 @@ enum
 	TITLE_MODE_REPLACE,
 	TITLE_MODE_IGNORE
 };
+#define DEFAULT_TITLE_MODE TITLE_MODE_REPLACE
 
 #define NEW_WINDOW_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
 #define COPY_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
@@ -56,8 +56,6 @@ typedef struct _options {
 } Options;
 
 typedef struct _config {
-	GKeyFile *cfg;
-	char *config_file;
 	char *font;
 	char *palette;
 	int opacity;
