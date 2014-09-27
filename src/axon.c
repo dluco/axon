@@ -9,11 +9,12 @@
 #include <gdk/gdkkeysyms.h>
 #include <glib/gstdio.h>
 
-#include "terminal.h"
-#include "utils.h"
+#include "axon.h"
 
 GSList *terminals;
 
+static void die(const char *errstr, ...);
+static void print_err(const char *errstr, ...);
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term);
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
 static void terminal_copy_text(Terminal *term);
@@ -26,9 +27,44 @@ static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
 static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget);
 static void terminal_new_window(Terminal *term);
 static void terminal_destroy_window(Terminal *term);
+static Terminal *terminal_initialize(Config *conf, Options *opts);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
+static void terminal_set_palette(Terminal *term, char *palette_name);
+static void terminal_set_opacity(Terminal *term, int opacity);
+static void terminal_run(Terminal *term, Options *opts);
+static char *terminal_get_cwd(Terminal *term);
+static void config_set_integer(Config *, const char *, int);
+static void config_set_value(Config *, const char *, const char *);
+static void config_set_boolean(Config *, const char *, gboolean);
+static Config *config_load_from_file(const char *user_file);
+static void config_save(Config *);
+static void config_free(Config *);
+static Options *options_parse(int argc, char *argv[]);
+
+static void die(const char *errstr, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "axon: ");
+	
+	va_start(ap, errstr);
+	vfprintf(stderr, errstr, ap);
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
+static void print_err(const char *errstr, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "axon: ");
+
+	va_start(ap, errstr);
+	vfprintf(stderr, errstr, ap);
+	va_end(ap);
+}
 
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term)
 {
@@ -267,7 +303,7 @@ static void terminal_destroy_window(Terminal *term)
 	}
 }
 
-Terminal *terminal_initialize(Config *conf, Options *opts)
+static Terminal *terminal_initialize(Config *conf, Options *opts)
 {
 	Terminal *term;
 	GdkColormap *colormap;
@@ -459,7 +495,7 @@ static void terminal_settings_apply(Terminal *term)
 	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 }
 
-void terminal_set_palette(Terminal *term, char *palette_name)
+static void terminal_set_palette(Terminal *term, char *palette_name)
 {
 	GKeyFile *cfg;
 	GdkColor fg;
@@ -544,7 +580,7 @@ void terminal_set_palette(Terminal *term, char *palette_name)
 	g_free(palette_file);
 }
 
-void terminal_set_opacity(Terminal *term, int opacity)
+static void terminal_set_opacity(Terminal *term, int opacity)
 {
 	unsigned short alpha = (int)((opacity / 100.0) * 65535);
 
@@ -559,7 +595,7 @@ void terminal_set_opacity(Terminal *term, int opacity)
 	}
 }
 
-void terminal_run(Terminal *term, Options *opts)
+static void terminal_run(Terminal *term, Options *opts)
 {
 	int cmd_argc = 0;
 	char **cmd_argv;
@@ -630,7 +666,7 @@ void terminal_run(Terminal *term, Options *opts)
 /* Retrieve the cwd of the specified term page.
  * Original function was from terminal-screen.c of gnome-terminal, copyright (C) 2001 Havoc Pennington
  * Adapted by Hong Jen Yee, non-linux stuff removed by David Gómez */
-char *terminal_get_cwd(Terminal *term)
+static char *terminal_get_cwd(Terminal *term)
 {
 	char *cwd = NULL;
 
@@ -665,6 +701,274 @@ char *terminal_get_cwd(Terminal *term)
 	}
 
 	return cwd;
+}
+
+static void config_free(Config *conf)
+{
+	g_key_file_free(conf->cfg);
+	g_free(conf->config_file);
+	g_free(conf->font);
+}
+
+static void config_set_integer(Config *conf, const char *key, int value)
+{
+	g_key_file_set_integer(conf->cfg, CFG_GROUP, key, value);
+	conf->modified = TRUE;
+}
+
+static void config_set_value(Config *conf, const char *key, const char *value)
+{
+	g_key_file_set_value(conf->cfg, CFG_GROUP, key, value);
+	conf->modified = TRUE;
+}
+
+static void config_set_boolean(Config *conf, const char *key, gboolean value)
+{
+	g_key_file_set_boolean(conf->cfg, CFG_GROUP, key, value);
+	conf->modified = TRUE;
+}
+
+static Config *config_load_from_file(const char *user_file)
+{
+	Config *conf;
+	GError *gerror = NULL;
+	gchar *tmp = NULL;
+	char *config_dir = NULL;
+
+	/* Allocate Config */
+	conf = g_new0(Config, 1);
+
+	/* Config file initialization */
+	conf->cfg = g_key_file_new();
+
+	if (user_file) {
+		/*
+		 * A user specified file MUST exist - otherwise, they could give a bogus
+		 * file like "/foo/bar" and mess up the root directory (if they had rights)
+		 */
+		if (g_path_is_absolute(user_file)) {
+			/* Absolute path was given */
+			conf->config_file = g_strdup(user_file);
+		} else {
+			/* Relative path to file was given - prepend current directory */
+			tmp = g_get_current_dir();
+			conf->config_file = g_build_filename(tmp, user_file, NULL);
+			g_free(tmp);
+		}
+		/* Test if user supplied config file actually exists and is not a directory */
+		if (!g_file_test(conf->config_file, G_FILE_TEST_IS_REGULAR)) {
+			print_err("invalid config file \"%s\"\n", user_file);
+		}
+	} else {
+		config_dir = g_build_filename(g_get_user_config_dir(), "axon", NULL);
+
+		if (!g_file_test(g_get_user_config_dir(), G_FILE_TEST_EXISTS)) {
+			/* ~/.config does not exist - create it */
+			g_mkdir(g_get_user_config_dir(), 0755);
+		}
+		if (!g_file_test(config_dir, G_FILE_TEST_EXISTS)) {
+			/* Program config dir does not exist - create it */
+			g_mkdir(config_dir, 0755);
+		}
+		conf->config_file = g_build_filename(config_dir, DEFAULT_CONFIG_FILE, NULL);
+		
+		g_free(config_dir);
+	}
+
+	/* Open config file */
+	if (!g_key_file_load_from_file(conf->cfg, conf->config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+		/* If file does not exist, then ignore - one will be created */
+		if (gerror->code == G_KEY_FILE_ERROR_UNKNOWN_ENCODING ||
+			gerror->code == G_KEY_FILE_ERROR_INVALID_VALUE) {
+			die("invalid config file format\n");
+		}
+		g_error_free(gerror);
+		gerror = NULL;
+	}
+
+	/* Load key values */
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "font", NULL)) {
+		config_set_value(conf, "font", DEFAULT_FONT);
+	}
+	conf->font = g_key_file_get_value(conf->cfg, CFG_GROUP, "font", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "color_scheme", NULL)) {
+		config_set_value(conf, "color_scheme", DEFAULT_COLOR_SCHEME);
+	}
+	conf->palette = g_key_file_get_value(conf->cfg, CFG_GROUP, "color_scheme", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "opacity", NULL)) {
+		config_set_integer(conf, "opacity", DEFAULT_OPACITY);
+	}
+	conf->opacity = g_key_file_get_integer(conf->cfg, CFG_GROUP, "opacity", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "title_mode", NULL)) {
+		config_set_value(conf, "title_mode", DEFAULT_TITLE_MODE);
+	}
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "title_mode", NULL);
+	if (strcmp(tmp, "replace") == 0) {
+		conf->title_mode = TITLE_MODE_REPLACE;
+	} else {
+		conf->title_mode = TITLE_MODE_IGNORE;
+	}
+	free(tmp);
+	
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_output", NULL)) {
+		config_set_boolean(conf, "scroll_on_output", SCROLL_ON_OUTPUT);
+	}
+	conf->scroll_on_output = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_output", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL)) {
+		config_set_boolean(conf, "scroll_on_keystroke", SCROLL_ON_KEYSTROKE);
+	}
+	conf->scroll_on_keystroke = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scroll_on_keystroke", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollbar", NULL)) {
+		config_set_boolean(conf, "scrollbar", SCROLLBAR);
+	}
+	conf->show_scrollbar = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "scrollbar", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "scrollback_lines", NULL)) {
+		config_set_integer(conf, "scrollback_lines", SCROLLBACK_LINES);
+	}
+	conf->scrollback_lines = g_key_file_get_integer(conf->cfg, CFG_GROUP, "scrollback_lines", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "allow_bold", NULL)) {
+		config_set_boolean(conf, "allow_bold", ALLOW_BOLD);
+	}
+	conf->allow_bold = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "allow_bold", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "audible_bell", NULL)) {
+		config_set_boolean(conf, "audible_bell", AUDIBLE_BELL);
+	}
+	conf->audible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "audible_bell", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "visible_bell", NULL)) {
+		config_set_boolean(conf, "visible_bell", VISIBLE_BELL);
+	}
+	conf->visible_bell = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "visible_bell", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "blinking_cursor", NULL)) {
+		config_set_boolean(conf, "blinking_cursor", BLINKING_CURSOR);
+	}
+	conf->blinking_cursor = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "blinking_cursor", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "cursor_type", NULL)) {
+		config_set_value(conf, "cursor_type", DEFAULT_CURSOR_TYPE);
+	}
+	tmp = g_key_file_get_value(conf->cfg, CFG_GROUP, "cursor_type", NULL);
+	if (strcmp(tmp, "beam") == 0) {
+		conf->cursor_type = VTE_CURSOR_SHAPE_IBEAM;
+	} else if (strcmp(tmp , "underline") == 0) {
+		conf->cursor_type = VTE_CURSOR_SHAPE_UNDERLINE;
+	} else {
+		conf->cursor_type = VTE_CURSOR_SHAPE_BLOCK;
+	}
+	free(tmp);
+	
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "autohide_mouse", NULL)) {
+		config_set_boolean(conf, "autohide_mouse", AUTOHIDE_MOUSE);
+	}
+	conf->autohide_mouse = g_key_file_get_boolean(conf->cfg, CFG_GROUP, "autohide_mouse", NULL);
+
+	if (!g_key_file_has_key(conf->cfg, CFG_GROUP, "word_chars", NULL)) {
+		config_set_value(conf, "word_chars", WORD_CHARS);
+	}
+	conf->word_chars = g_key_file_get_value(conf->cfg, CFG_GROUP, "word_chars", NULL);
+
+	return conf;
+}
+
+static void config_save(Config *conf)
+{
+	GError *gerror = NULL;
+
+	if (!conf->modified) {
+		/* No changes made to config */
+		return;
+	}
+
+	/* Write contents of keyfile to config file */
+	if (!g_key_file_save_to_file(conf->cfg, conf->config_file, &gerror)) {
+		die("%s\n", gerror->message);
+	}
+}
+
+static Options *options_parse(int argc, char *argv[])
+{
+	Options *opts;
+	GOptionContext *context;
+	GError *gerror = NULL;
+	int i, n;
+	int t_argc;
+	char **t_argv;
+	gboolean match = FALSE;
+
+	/* Allocate Options */
+	opts = g_new0(Options, 1);
+
+	GOptionEntry entries[] = {
+		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
+		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a terminal configuration file", "FILE" },
+		{ "working-directory", 'd', 0, G_OPTION_ARG_STRING, &opts->work_dir, "Set the working directory", "DIR" },
+		{ "command", 'x', 0, G_OPTION_ARG_STRING, &opts->command, "Execute command", "COMMAND" },
+		{ "execute", 'e', 0, G_OPTION_ARG_NONE, &opts->execute, "Execute command (last option in the command line)", NULL },
+		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &opts->execute_args, NULL, NULL },
+		{ "login", 'l', 0, G_OPTION_ARG_NONE, &opts->login, "Login shell", NULL },
+		{ "title", 't', 0, G_OPTION_ARG_STRING, &opts->title, "Set window title", "TITLE" },
+		{ "fullscreen", 'f', 0, G_OPTION_ARG_NONE, &opts->fullscreen, "Fullscreen mode", NULL },
+		{ "geometry", 'g', 0, G_OPTION_ARG_STRING, &opts->geometry, "X geometry specification", "GEOMETRY" },
+		{ NULL }
+	};
+
+	/* 
+	 * Rewrite argv to include a "--" after the -e argument. This is necessary to make
+	 * sure GOption doesn't grab any arguments meant for the command being called.
+	 * The "match" flag is used so that commands such as:
+	 * $ axon -e xterm -e ranger
+	 * can be run correctly. However, as soon as the "-e" option is given,
+	 * ALL other options afterwards are considered part of the execute command. Therefore,
+	 * the "-e" option should ONLY be given after all other options.
+	 */
+	t_argc = argc;
+	t_argv = calloc(argc + 1, sizeof(*t_argv));
+	n = 0;
+
+	for (i = 0; i < argc; i++) {
+		if (g_strcmp0(argv[i], "-e") == 0 && !match) {
+			t_argv[n] = "-e";
+			n++;
+			t_argv[n] = "--";
+			t_argc = argc + 1;
+			match = TRUE;
+		} else {
+			t_argv[n] = g_strdup(argv[i]);
+		}
+		n++;
+	}
+
+	context = g_option_context_new("- terminal emulator");
+	g_option_context_add_main_entries(context, entries, NULL);
+	g_option_context_add_group(context, gtk_get_option_group(TRUE));
+	if (!g_option_context_parse(context, &t_argc, &t_argv, &gerror)) {
+		die("%s\n", gerror->message);
+	}
+	g_option_context_free(context);
+
+	g_strfreev(t_argv);
+
+	/* Print version info and exit */
+	if (opts->version) {
+		printf("axon - %s, 2014 David Luco <dluco11@gmail.com>\n", VERSION);
+		exit(EXIT_SUCCESS);
+	}
+
+	/* A working directory must always be provided */
+	if (!opts->work_dir) {
+		opts->work_dir = g_get_current_dir();
+	}
+
+	return opts;
 }
 
 /* Main entry point for program */

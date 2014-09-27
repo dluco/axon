@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef AXON_H
+#define AXON_H
 
 #define URL_REGEX "([\\w-]+://?|www[.])[^\\s()<>]+(?:\\([\\w\\d]+\\)|([^[:punct:]\\s]|/))"
 #define WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
@@ -42,6 +42,19 @@ enum
 #define FULLSCREEN_KEY GDK_KEY_F11
 #define MENU_KEY GDK_KEY_Menu
 
+typedef struct _options {
+	char *work_dir;
+	char *command;
+	char **execute_args;
+	char *title;
+	char *geometry;
+	char *config_file;
+	gboolean version;
+	gboolean execute;
+	gint login;
+	gboolean fullscreen;
+} Options;
+
 typedef struct _config {
 	GKeyFile *cfg;
 	char *config_file;
@@ -63,11 +76,17 @@ typedef struct _config {
 	gboolean modified;
 } Config;
 
-void config_set_integer(Config *, const char *, int);
-void config_set_value(Config *, const char *, const char *);
-void config_set_boolean(Config *, const char *, gboolean);
-Config *config_load_from_file(const char *user_file);
-void config_save(Config *);
-void config_free(Config *);
+typedef struct _terminal {
+	GtkWidget *window;
+	GtkWidget *menu;
+	GtkWidget *hbox;
+	GtkWidget *vte; /* VTE terminal */
+	GtkWidget *scrollbar;
+	Config *conf; /* associated Config */
+	Options *opts; /* associated Options */
+	GPid pid;
+	gboolean fullscreen; /* fullscreen state */
+} Terminal;
 
-#endif /* CONFIG_H */
+
+#endif /* AXON_H */
