@@ -6,8 +6,8 @@ DEFINES := -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\"
 
 CC = gcc
 PKGDEPS = gtk+-2.0 vte
-CFLAGS := -Wall -O2 $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-LDFLAGS := -O2 $(shell pkg-config --libs ${PKGDEPS})
+CFLAGS := -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
+LDFLAGS := $(shell pkg-config --libs ${PKGDEPS})
 
 all: axon
 

@@ -327,23 +327,20 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 	/* Create popup menu */
 	terminal_menu_popup_initialize(term);
 	
-	/* Connect signals */
-	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy_window), term);
-	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
-
+	/* Apply fullscreen option, if set */
 	if (opts->fullscreen) {
 		gtk_window_fullscreen(GTK_WINDOW(term->window));
 	}
 
+	/* Apply terminal settings - font is set before hints,
+	   otherwise the window won't resize correctly. */
+	terminal_settings_apply(term);
+
 	/* Start terminal */
 	terminal_run(term, opts);
 
-	/* Show and realize all widgets */
-	gtk_widget_show_all(term->window);
-
-	/* Apply terminal settings - must be after show_all
-	   because of scrollbar visibility. */
-	terminal_settings_apply(term);
+	/* Show and realize hbox */
+	gtk_widget_show_all(term->hbox);
 
 	/* Set geometry hints */
 	gtk_widget_style_get(term->vte, "inner-border", &border, NULL);
@@ -356,22 +353,32 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 	gtk_border_free(border);
 
 	gtk_window_set_geometry_hints(GTK_WINDOW(term->window),
-			term->vte,
-			&hints,
-			GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+		term->vte,
+		&hints,
+		GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
-	// FIXME: Apply geometry
-	gtk_widget_realize(term->vte);
+	/* Apply geometry option, if set, otherwise set default size */
 	if (opts->geometry) {
 		geometry = g_strdup(opts->geometry);
 		g_free(opts->geometry);
+
+		if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), geometry)) {
+			print_err("invalid geometry format\n");
+		}
+		g_free(geometry);
 	} else {
-		geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+		/* Set default window size */
+		vte_terminal_set_size(VTE_TERMINAL(term->vte), DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
 	}
-	if (!gtk_window_parse_geometry(GTK_WINDOW(term->window), geometry)) {
-		print_err("invalid geometry format\n");
-	}
-	g_free(geometry);
+
+	/* Connect signals */
+	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy_window), term);
+	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
+
+	gtk_widget_show_all(term->window);
+
+	/* Show/hide the scrollbar */
+	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 
 	return term;
 }
@@ -471,9 +478,6 @@ static void terminal_settings_apply(Terminal *term)
 	/* Set VTE colors and opacity */
 	terminal_set_palette(term, conf->palette);
 	terminal_set_opacity(term, conf->opacity);
-
-	/* Show/hide the scrollbar */
-	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
 }
 
 static void terminal_set_palette(Terminal *term, char *palette_name)

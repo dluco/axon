@@ -1,14 +1,6 @@
 TODO:
 -----
-- resize method?
 - use a top-level struct to hold:
 	- Config
 	- Options
 	- g_ptr_array of all Terminals
-- redo config file handling:
-	- look for:
-		~/.config/axon/axonrc
-		/etc/axon/axonrc
-		(fallback to defaults)
-	- config file does not have to have all settings
-	- don't write to config file (ever)
