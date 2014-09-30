@@ -719,10 +719,7 @@ static Config *config_load_from_file(const char *user_file)
 	config_initialize(conf);
 
 	if (user_file) {
-		/*
-		 * A user specified file MUST exist - otherwise, they could give a bogus
-		 * file like "/foo/bar" and mess up the root directory (if they had rights)
-		 */
+		/* Build path to user config file */
 		if (g_path_is_absolute(user_file)) {
 			/* Absolute path was given */
 			config_file = g_strdup(user_file);
@@ -737,14 +734,15 @@ static Config *config_load_from_file(const char *user_file)
 			print_err("invalid config file \"%s\"\n", user_file);
 		}
 	} else {
-		/* Try $XDG_CONFIG_HOME/axon/axonrc */
+		/* Try $XDG_CONFIG_HOME/axon/axonrc first */
 		config_file = g_build_filename(g_get_user_config_dir(), "axon", DEFAULT_CONFIG_FILE, NULL);
 
 		/* Check if file exists */
 		if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR)) {
-			/* Try $HOME/.config/axon/axonrc */
+			/* Try $HOME/.axonrc */
 			g_free(config_file);
-			config_file = g_build_filename(g_get_home_dir(), ".config", "axon", DEFAULT_CONFIG_FILE, NULL);
+			config_file = g_build_filename(g_get_home_dir(), "." DEFAULT_CONFIG_FILE, NULL);
+
 			/* Check if file exists */
 			if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR)) {
 				/* No config file available - defaults will be used */

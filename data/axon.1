@@ -77,9 +77,15 @@ Show context menu (right-click).
 .SH FILES
 By default
 .B axon
-will look for a config file at $XDG_CONFIG_HOME/axon/axonrc first, and fallback to $HOME/.config/axon/axonrc if it exists. Reasonable compiled-in default settings will be used if no config file is found.
+will look for a config file first at:
 .P
-A documented example config file can be found at /usr/share/doc/axon/axonrc.
+	$XDG_CONFIG_HOME/axon/axonrc
+.P
+and fallback to:
+.P
+	$HOME/.axonrc
+.P
+Reasonable compiled-in default settings will be used if no config file is found. A documented example config file can be found at /usr/share/doc/axon/axonrc.
 .SH SEE ALSO
 https://github.com/dluco/axon
 .SH AUTHOR
