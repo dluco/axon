@@ -374,6 +374,7 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 	/* Connect signals */
 	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy_window), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
+	g_signal_connect_swapped(G_OBJECT(term->window), "composited-changed", G_CALLBACK(terminal_settings_apply), term);
 
 	gtk_widget_show_all(term->window);
 
