@@ -3,7 +3,7 @@
 
 export # Export all variables to sub-makes
 
-VERSION = 2.0.0
+VERSION = 3.0.0
 OUT = axon
 
 DISTFILES = LICENSE makefile README TODO colorschemes/ data/ src/
