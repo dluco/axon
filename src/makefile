@@ -1,5 +1,5 @@
 OUT = axon
-VERSION ?= 3.0.0
+VERSION ?= 3.0.1
 DATADIR ?= /usr/share
 
 DEFINES := -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\"
