@@ -12,8 +12,7 @@ LDFLAGS := $(shell pkg-config --libs ${PKGDEPS})
 all: axon
 
 axon: axon.c
-	@echo $(CC) -o ${OUT}
-	@$(CC) $(CFLAGS) $(LDFLAGS) axon.c -o ${OUT}
+	$(CC) $(CFLAGS) $(LDFLAGS) axon.c -o ${OUT}
 
 clean:
 	@${RM} ${OUT}

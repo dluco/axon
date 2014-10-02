@@ -16,12 +16,13 @@ all: axon
 
 axon:
 	@${MAKE} -C src/
-# For convenience, create link to executable
+#	For convenience, create link to executable
 	@ln -sf src/axon axon
 
 manpage:
 	@echo generating manpage
-	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
+#	Uncomment to update manpage date
+#	@sed -r -i "s/\"[0-9]{4}-[0-9]{2}-[0-9]{2}\"/\"$(shell date +%Y-%m-%d)\"/g" data/axon.1
 	@sed -r -i "s/axon\\\-([0-9]*\.[0-9]*)*/axon\\\-${VERSION}/g" data/axon.1
 
 desktop:
@@ -77,4 +78,4 @@ uninstall:
 	@echo removing program documentation directory
 	@rm -rf ${DESTDIR}${PREFIX}/share/doc/axon/
 
-.PHONY: all axon clean debug dist install uninstall
+.PHONY: all axon manpage clean debug dist install uninstall
