@@ -1,7 +1,7 @@
 #ifndef AXON_H
 #define AXON_H
 
-#define URL_REGEX "([\\w-]+://?|www[.])[^\\s()<>]+(?:\\([\\w\\d]+\\)|([^[:punct:]\\s]|/))"
+#define URL_REGEX "((ftp|http)s?://|www\\.)[-a-zA-Z0-9.?$%&/=_~#.,:;+]*"
 #define WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
 #define DEFAULT_CONFIG_FILE "axonrc"
 #define CFG_GROUP "axon"
@@ -16,6 +16,7 @@
 #define SCROLLBAR FALSE
 #define SCROLLBACK_LINES 1024
 #define ALLOW_BOLD TRUE
+#define HIGHLIGHT_URLS FALSE
 #define AUDIBLE_BELL FALSE
 #define VISIBLE_BELL FALSE
 #define BLINKING_CURSOR FALSE
@@ -66,6 +67,7 @@ typedef struct _config {
 	gboolean show_scrollbar;
 	int scrollback_lines;
 	gboolean allow_bold;
+	gboolean highlight_urls;
 	gboolean audible_bell;
 	gboolean visible_bell;
 	gboolean blinking_cursor;

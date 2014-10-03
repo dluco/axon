@@ -1,7 +1,7 @@
 [axon]
 # Terminal font
 font=Monospace, 11
-# Preset colorschemes (/usr/share/axon/colorschemes)
+# Preset colorschemes: see /usr/share/axon/colorschemes
 color_scheme=white-on-black
 # Window title mode: replace, ignore
 title_mode=replace
@@ -11,10 +11,12 @@ scroll_on_output=false
 scroll_on_keystroke=true
 # Show the terminal scrollbar
 scrollbar=false
-# Number of scrollback lines (infinite = -1)
+# Number of scrollback lines: infinite = -1
 scrollback_lines=1024
 # Allow the display of bold text
-allow_bold = true
+allow_bold=true
+# Highlight urls and open browser when clicked
+highlight_urls=false
 # Enable/Disable terminal beeping
 audible_bell=false
 # Enable/Disable terminal visible bell

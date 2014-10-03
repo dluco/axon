@@ -74,15 +74,17 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 	
 	switch(event->button) {
 	case 1:
-		/* find out if the cursor was over a matched expression */
-		column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
-		row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
-		match = vte_terminal_match_check(vte, column, row, &tag);
+		if (term->conf->highlight_urls) {
+			/* find out if the cursor was over a matched expression */
+			column = ((glong) (event->x) / vte_terminal_get_char_width(VTE_TERMINAL(term->vte)));
+			row = ((glong) (event->y) / vte_terminal_get_char_height(VTE_TERMINAL(term->vte)));
+			match = vte_terminal_match_check(vte, column, row, &tag);
 
-		if (match != NULL) {
-			terminal_open_url(term, match);
-			g_free(match);
-			return TRUE;
+			if (match != NULL) {
+				terminal_open_url(term, match);
+				g_free(match);
+				return TRUE;
+			}
 		}
 		break;
 	case 2:
@@ -190,21 +192,19 @@ static void terminal_fullscreen(Terminal *term)
 static void terminal_open_url(Terminal *term, char *url)
 {
 	gchar *cmd;
-	GError *gerror = NULL;
-	GdkScreen *screen;
 
-	if (strncmp(url, "http://", 7) != 0) {
-		/* Prepend http to url or gtk_show_uri complains */
-		cmd = g_strdup_printf("http://%s", url);
-	} else {
+	if (strncmp(url, "http", 4) == 0 || strncmp(url, "ftp", 3) == 0) {
+		/* url has a proper http or ftp prefix */
 		cmd = g_strdup(url);
+	} else {
+		/* prepend http to url or gtk_show_uri complains */
+		cmd = g_strdup_printf("http://%s", url);
 	}
 
-	screen = gtk_widget_get_screen(GTK_WIDGET(term->window));
-	if (!gtk_show_uri(screen, cmd, gtk_get_current_event_time(), &gerror)) {
-		print_err("Failed to open URL \"%s\"", url);
-		g_error_free(gerror);
+	if (!gtk_show_uri(gtk_widget_get_screen(GTK_WIDGET(term->window)), cmd, gtk_get_current_event_time(), NULL)) {
+		print_err("unable to open URL \"%s\"", url);
 	}
+
 	g_free(cmd);
 }
 
@@ -386,9 +386,6 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 
 static void terminal_vte_initialize(Terminal *term)
 {
-	GRegex *regex;
-	gint id;
-
 	/* Create VTE */
 	term->vte = vte_terminal_new();
 
@@ -398,12 +395,6 @@ static void terminal_vte_initialize(Terminal *term)
 	vte_terminal_set_encoding(VTE_TERMINAL(term->vte), nl_langinfo(CODESET));
     vte_terminal_set_backspace_binding(VTE_TERMINAL(term->vte), VTE_ERASE_ASCII_DELETE);
     vte_terminal_set_delete_binding(VTE_TERMINAL(term->vte), VTE_ERASE_DELETE_SEQUENCE);
-
-	/* Match urls */
-	regex = g_regex_new(URL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
-	id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
-	vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
-	g_regex_unref(regex);
 
 	/* Connect signals */
 	g_signal_connect(G_OBJECT(term->vte), "button-press-event", G_CALLBACK(terminal_button_press_event), term);
@@ -452,6 +443,9 @@ static void terminal_menu_popup_initialize(Terminal *term)
 /* Apply settings to a Terminal */
 static void terminal_settings_apply(Terminal *term)
 {
+	GRegex *regex;
+	gint id;
+
 	Config *conf = term->conf;
 
 	/* VTE properties */
@@ -461,7 +455,7 @@ static void terminal_settings_apply(Terminal *term)
 	vte_terminal_set_font_from_string(VTE_TERMINAL(term->vte), conf->font);
 	vte_terminal_set_allow_bold(VTE_TERMINAL(term->vte), conf->allow_bold);
 
-	/* Scrollling */
+	/* Scrolling */
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(term->vte), conf->scroll_on_output);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(term->vte), conf->scroll_on_keystroke);
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(term->vte), conf->scrollback_lines);
@@ -475,6 +469,14 @@ static void terminal_settings_apply(Terminal *term)
 	/* Bells */
 	vte_terminal_set_audible_bell(VTE_TERMINAL(term->vte), conf->audible_bell);
 	vte_terminal_set_visible_bell(VTE_TERMINAL(term->vte), conf->visible_bell);
+
+	/* Highlight urls */
+	if (conf->highlight_urls) {
+		regex = g_regex_new(URL_REGEX, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
+		id = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte), regex, 0);
+		vte_terminal_match_set_cursor_type(VTE_TERMINAL(term->vte), id, GDK_HAND1);
+		g_regex_unref(regex);
+	}
 
 	/* Set VTE colors and opacity */
 	terminal_set_palette(term, conf->palette);
@@ -701,6 +703,7 @@ static void config_initialize(Config *conf)
 	conf->show_scrollbar = SCROLLBAR;
 	conf->scrollback_lines = SCROLLBACK_LINES;
 	conf->allow_bold = ALLOW_BOLD;
+	conf->highlight_urls = HIGHLIGHT_URLS;;
 	conf->audible_bell = AUDIBLE_BELL;
 	conf->visible_bell = VISIBLE_BELL;
 	conf->blinking_cursor = BLINKING_CURSOR;
@@ -812,6 +815,10 @@ static Config *config_load_from_file(const char *user_file)
 
 	if (g_key_file_has_key(keyfile, CFG_GROUP, "allow_bold", NULL)) {
 		conf->allow_bold = g_key_file_get_boolean(keyfile, CFG_GROUP, "allow_bold", NULL);
+	}
+
+	if (g_key_file_has_key(keyfile, CFG_GROUP, "highlight_urls", NULL)) {
+		conf->highlight_urls = g_key_file_get_boolean(keyfile, CFG_GROUP, "highlight_urls", NULL);
 	}
 
 	if (g_key_file_has_key(keyfile, CFG_GROUP, "audible_bell", NULL)) {
