@@ -1,5 +1,5 @@
 pkgname=axon
-pkgver=3.0.1
+pkgver=3.1.0
 pkgrel=1
 pkgdesc='A fast and lightweight terminal emulator built with GTK and VTE'
 arch=('i686' 'x86_64')
