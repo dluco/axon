@@ -6,7 +6,7 @@ DEFINES := -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\"
 
 CC = gcc
 PKGDEPS = gtk+-2.0 vte
-CFLAGS := -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
+CFLAGS := -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
 LDFLAGS := $(shell pkg-config --libs ${PKGDEPS})
 
 all: axon
@@ -19,8 +19,5 @@ clean:
 
 strip: all
 	@strip --strip-all ${OUT}
-
-debug: CFLAGS := -g -Wall $(shell pkg-config --cflags ${PKGDEPS}) ${DEFINES}
-debug: clean all
 
 .PHONY: all clean debug strip

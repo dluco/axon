@@ -27,7 +27,7 @@ manpage:
 
 desktop:
 	@echo generating desktop file
-	@sed -r -i "s/Version=[0-9]*\.[0-9]*(\.[0-9]*)?/Version=${VERSION}/g" data/axon.desktop
+	@sed -r -i "s/Version=[0-9]*\.[0-9]*\.[0-9]*/Version=${VERSION}/g" data/axon.desktop
 
 clean:
 	@echo cleaning
@@ -38,10 +38,6 @@ strip: all
 	@echo striping executable
 	@${MAKE} -C src/ strip
 
-debug:
-	@echo making debug build
-	@${MAKE} -C src/ debug
-
 dist: clean
 	@echo creating dist tarball
 	@mkdir axon-${VERSION}/
@@ -49,7 +45,7 @@ dist: clean
 	@tar -czf axon-${VERSION}.tar.gz axon-${VERSION}/
 	@rm -rf axon-${VERSION}/
 
-install: all
+install: all strip
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@install -D -m755 src/axon ${DESTDIR}${PREFIX}/bin/axon
 	@echo installing desktop file to ${DESTDIR}${DATADIR}/applications
@@ -78,4 +74,4 @@ uninstall:
 	@echo removing program documentation directory
 	@rm -rf ${DESTDIR}${PREFIX}/share/doc/axon/
 
-.PHONY: all axon manpage clean debug dist install uninstall
+.PHONY: all axon manpage clean dist install uninstall
