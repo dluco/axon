@@ -14,25 +14,27 @@
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
 #define CLEANMASK(mask) (mask & (MODKEY|GDK_SHIFT_MASK))
 
-GSList *terminals;
-
+/* utility functions */
 static void die(const char *errstr, ...);
 static void print_err(const char *errstr, ...);
+
+/* callbacks */
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term);
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
+static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
+static void terminal_eof_event(GtkWidget *vte, Terminal *term);
+static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
+static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget);
+
 static void terminal_copy_text(Terminal *term);
 static void terminal_paste_text(Terminal *term);
 static void terminal_reset(Terminal *term);
 static void terminal_fullscreen(Terminal *term);
 static void terminal_menu_popup(Terminal *term);
 static void terminal_open_url(Terminal *term, char *url);
-static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
-static void terminal_eof_event(GtkWidget *vte, Terminal *term);
-static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
-static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget);
 static void terminal_new_window(Terminal *term);
 static void terminal_destroy(Terminal *term);
-static Terminal *terminal_initialize(Config *conf, Options *opts);
+static Terminal *terminal_initialize(Axon *axon, Options *opts);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
@@ -42,7 +44,6 @@ static void terminal_run(Terminal *term, Options *opts);
 static char *terminal_get_cwd(Terminal *term);
 static void config_initialize(Config *conf);
 static Config *config_load_from_file(const char *user_file);
-static Options *options_parse(int argc, char *argv[]);
 
 #include "config.h"
 
@@ -71,9 +72,9 @@ static void print_err(const char *errstr, ...)
 
 static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *event, Terminal *term)
 {
-	glong column, row;
-	gchar *match;
-	gint tag;
+	long column, row;
+	char *match;
+	int tag;
 
 	if (event->type != GDK_BUTTON_PRESS) {
 		return FALSE;
@@ -158,7 +159,7 @@ static void terminal_menu_popup(Terminal *term)
 
 static void terminal_open_url(Terminal *term, char *url)
 {
-	gchar *cmd;
+	char *cmd;
 
 	if (strncmp(url, "http", 4) == 0 || strncmp(url, "ftp", 3) == 0) {
 		/* url has a proper http or ftp prefix */
@@ -185,7 +186,7 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 	terminal_destroy(term);
 
 	/* Destroy if no windows left */
-	if (g_slist_length(terminals) == 0) {
+	if (g_list_length(term->parent->terminals) == 0) {
 		gtk_main_quit();
 	}
 }
@@ -200,7 +201,7 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 	terminal_destroy(term);
 
 	/* Destroy if no windows left */
-	if (g_slist_length(terminals) == 0) {
+	if (g_list_length(term->parent->terminals) == 0) {
 		gtk_main_quit();
 	}
 }
@@ -227,7 +228,7 @@ static void terminal_new_window(Terminal *term)
 	memset(&n_opts, 0, sizeof(n_opts));
 
 	n_opts.work_dir = terminal_get_cwd(term);
-	Terminal *n_term = terminal_initialize(term->conf, &n_opts);
+	Terminal *n_term = terminal_initialize(term->parent, &n_opts);
 	g_free(n_opts.work_dir);
 	
 	/* Apply geometry */
@@ -242,18 +243,19 @@ static void terminal_new_window(Terminal *term)
 static void terminal_destroy(Terminal *term)
 {
 	/* Remove terminal from list, destroy, and free */
-	terminals = g_slist_remove(terminals, term);
+	term->parent->terminals = g_list_remove(term->parent->terminals, term);
 	gtk_widget_destroy(term->window);
 
 	/* Destroy if no windows left */
-	if (g_slist_length(terminals) == 0) {
+	if (g_list_length(term->parent->terminals) == 0) {
 		gtk_main_quit();
 	}
 }
 
-static Terminal *terminal_initialize(Config *conf, Options *opts)
+static Terminal *terminal_initialize(Axon *axon, Options *opts)
 {
 	Terminal *term;
+	Config *conf;
 	GdkColormap *colormap;
 	GdkGeometry hints;
 	GtkBorder *border;
@@ -261,8 +263,10 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 
 	/* Allocate and initialize new Terminal struct */
 	term = g_new0(Terminal, 1);
-	terminals = g_slist_append(terminals, term);
-	term->conf = conf;
+	term->parent = axon;
+	term->conf = conf = axon->conf;
+	/* Add new Terminal to list */
+	axon->terminals = g_list_append(axon->terminals, term);
 
 	/* Create toplevel window */
 	term->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -415,7 +419,7 @@ static void terminal_menu_popup_initialize(Terminal *term)
 static void terminal_settings_apply(Terminal *term)
 {
 	GRegex *regex;
-	gint id;
+	int id;
 
 	Config *conf = term->conf;
 
@@ -465,11 +469,11 @@ static void terminal_set_palette(Terminal *term, char *palette_name)
 	gboolean has_bg = FALSE;
 	gboolean has_cursor = FALSE;
 	gboolean valid_palette = FALSE;
-	gchar *palette_file;
-	gchar **palette_colors;
-	gchar *tmp;
+	char *palette_file;
+	char **palette_colors;
+	char *tmp;
 	int n = 0;
-	GError *gerror = NULL;
+	GError *error = NULL;
 
 	/* Config file initialization */
 	cfg = g_key_file_new();
@@ -479,11 +483,11 @@ static void terminal_set_palette(Terminal *term, char *palette_name)
 	g_free(tmp);
 
 	/* Open config file */
-	if (!g_key_file_load_from_file(cfg, palette_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+	if (!g_key_file_load_from_file(cfg, palette_file, G_KEY_FILE_KEEP_COMMENTS, &error)) {
 		/* palette file not found - default terminal colors will be used */
-		print_err("palette \"%s\": %s\n", palette, gerror->message);
-		g_error_free(gerror);
-		gerror = NULL;
+		print_err("palette \"%s\": %s\n", palette_name, error->message);
+		g_error_free(error);
+		error = NULL;
 	} else {
 		/* Begin parsing palette file */
 		if ((tmp = g_key_file_get_value(cfg, "scheme", "color_foreground", NULL))) {
@@ -560,7 +564,7 @@ static void terminal_run(Terminal *term, Options *opts)
 	char **cmd_argv;
 	char *cmd_joined;
 	char *fork_argv[3];
-	GError *gerror = NULL;
+	GError *error = NULL;
 	char *path;
 
 	if (opts->command || opts->execute) {
@@ -570,15 +574,15 @@ static void terminal_run(Terminal *term, Options *opts)
 			/* -e option - last in command line, collects remainder of arguments */
 			if (opts->execute_args) {
 				cmd_joined = g_strjoinv(" ", opts->execute_args);
-				if (!g_shell_parse_argv(cmd_joined, &cmd_argc, &cmd_argv, &gerror)) {
-					die("%s\n", gerror->message);
+				if (!g_shell_parse_argv(cmd_joined, &cmd_argc, &cmd_argv, &error)) {
+					die("%s\n", error->message);
 				}
 				g_free(cmd_joined);
 			}
 		} else {
 			/* -x option */
-			if (!g_shell_parse_argv(opts->command, &cmd_argc, &cmd_argv, &gerror)) {
-				die("%s\n", gerror->message);
+			if (!g_shell_parse_argv(opts->command, &cmd_argc, &cmd_argv, &error)) {
+				die("%s\n", error->message);
 			}
 		}
 
@@ -588,9 +592,9 @@ static void terminal_run(Terminal *term, Options *opts)
 			if (path) {
 				if (!vte_terminal_fork_command_full(VTE_TERMINAL(term->vte), VTE_PTY_DEFAULT,
 							opts->work_dir, cmd_argv, NULL, G_SPAWN_SEARCH_PATH,
-							NULL, NULL, &term->pid, &gerror)) {
+							NULL, NULL, &term->pid, &error)) {
 					/* Non-fatal error */
-					print_err("%s\n", gerror->message);
+					print_err("%s\n", error->message);
 				}
 			} else {
 				/* Fatal error - otherwise it gets tricky */
@@ -687,9 +691,9 @@ static Config *config_load_from_file(const char *user_file)
 {
 	Config *conf;
 	GKeyFile *keyfile;
-	gchar *tmp = NULL;
+	char *tmp = NULL;
 	char *config_file = NULL;
-	GError *gerror = NULL;
+	GError *error = NULL;
 
 	/* Allocate Config */
 	conf = g_new0(Config, 1);
@@ -735,10 +739,10 @@ static Config *config_load_from_file(const char *user_file)
 	keyfile = g_key_file_new();
 
 	/* Open config file */
-	if (!g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_KEEP_COMMENTS, &gerror)) {
+	if (!g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_KEEP_COMMENTS, &error)) {
 		/* Couldn't open config file - defaults will be used */
 		print_err("error opening config file\n");
-		g_error_free(gerror);
+		g_error_free(error);
 		g_free(config_file);
 		return conf;
 	}
@@ -829,21 +833,23 @@ static Config *config_load_from_file(const char *user_file)
 	return conf;
 }
 
-static Options *options_parse(int argc, char *argv[])
+/* Main entry point for program */
+int main(int argc, char *argv[])
 {
+	Axon *axon;
 	Options *opts;
-	GOptionContext *context;
-	GError *gerror = NULL;
+	GError *error = NULL;
 	int i, n;
 	int t_argc;
 	char **t_argv;
+	gboolean version = FALSE;
 	gboolean match = FALSE;
 
 	/* Allocate Options */
 	opts = g_new0(Options, 1);
 
 	GOptionEntry entries[] = {
-		{ "version", 'v', 0, G_OPTION_ARG_NONE, &opts->version, "Print version number", NULL },
+		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Print version number", NULL },
 		{ "config", 'c', 0, G_OPTION_ARG_FILENAME, &opts->config_file, "Load a terminal configuration file", "FILE" },
 		{ "working-directory", 'd', 0, G_OPTION_ARG_STRING, &opts->work_dir, "Set the working directory", "DIR" },
 		{ "command", 'x', 0, G_OPTION_ARG_STRING, &opts->command, "Execute command", "COMMAND" },
@@ -882,18 +888,14 @@ static Options *options_parse(int argc, char *argv[])
 		n++;
 	}
 
-	context = g_option_context_new("- terminal emulator");
-	g_option_context_add_main_entries(context, entries, NULL);
-	g_option_context_add_group(context, gtk_get_option_group(TRUE));
-	if (!g_option_context_parse(context, &t_argc, &t_argv, &gerror)) {
-		die("%s\n", gerror->message);
+	/* Initialize GTK+ and parse commandline options/arguments */
+	if (!gtk_init_with_args(&t_argc, &t_argv, "- terminal emulator", entries, NULL, &error)) {
+		die("%s\n", error->message);
 	}
-	g_option_context_free(context);
-
 	g_strfreev(t_argv);
 
 	/* Print version info and exit */
-	if (opts->version) {
+	if (version) {
 		printf("axon %s\n", VERSION);
 		exit(EXIT_SUCCESS);
 	}
@@ -902,33 +904,20 @@ static Options *options_parse(int argc, char *argv[])
 	if (!opts->work_dir) {
 		opts->work_dir = g_get_current_dir();
 	}
-
-	return opts;
-}
-
-/* Main entry point for program */
-int main(int argc, char *argv[])
-{
-	Config *conf;
-	Options *opts;
-
-	/* Initialize GTK+ */
-	gtk_init(&argc, &argv);
 	
+	/* Create toplevel Axon struct */
+	axon = g_new0(Axon, 1);
+
 	/* Set name of application */
 	g_set_application_name("axon");
-
 	/* Set default window icon for all windows */
 	gtk_window_set_default_icon_name("terminal");
 
-	/* Load commandline options */
-	opts = options_parse(argc, argv);
-
 	/* Load configuration file */
-	conf = config_load_from_file(opts->config_file);
+	axon->conf = config_load_from_file(opts->config_file);
 
-	/* Initialize terminal instance */
-	terminal_initialize(conf, opts);
+	/* Initialize Terminal instance */
+	terminal_initialize(axon, opts);
 
 	/* Run GTK+ main loop */
 	gtk_main();

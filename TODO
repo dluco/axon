@@ -1,9 +1,6 @@
 TODO:
 -----
-- use a top-level struct to hold:
-	- Config
-	- Options
-	- g_ptr_array of all Terminals
+
 
 BUGS:
 -----

@@ -2,22 +2,15 @@
 #define _AXON_H_
 
 /* structs */
-typedef struct _Options Options;
+typedef struct _Axon Axon;
 typedef struct _Config Config;
+typedef struct _Options Options;
 typedef struct _Key Key;
 typedef struct _Terminal Terminal;
 
-struct _Options {
-	char *work_dir;
-	char *command;
-	char **execute_args;
-	char *title;
-	char *geometry;
-	char *config_file;
-	gboolean version;
-	gboolean execute;
-	gint login;
-	gboolean fullscreen;
+struct _Axon {
+	GList *terminals; /* list of all terminal windows */
+	struct _Config *conf;
 };
 
 struct _Config {
@@ -39,6 +32,18 @@ struct _Config {
 	char *word_chars;
 };
 
+struct _Options {
+	char *work_dir;
+	char *command;
+	char **execute_args;
+	char *title;
+	char *geometry;
+	char *config_file;
+	gboolean execute;
+	int login;
+	gboolean fullscreen;
+};
+
 struct _Key {
 	int mask;
 	int keyval;
@@ -46,6 +51,7 @@ struct _Key {
 };
 
 struct _Terminal {
+	struct _Axon *parent; /* back-pointer to parent Axon */
 	GtkWidget *window;
 	GtkWidget *menu;
 	GtkWidget *hbox;
