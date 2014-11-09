@@ -11,6 +11,9 @@
 
 #include "axon.h"
 
+#define LENGTH(x) (sizeof(x)/sizeof(x[0]))
+#define CLEANMASK(mask) (mask & (MODKEY|GDK_SHIFT_MASK))
+
 GSList *terminals;
 
 static void die(const char *errstr, ...);
@@ -19,14 +22,16 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term);
 static void terminal_copy_text(Terminal *term);
 static void terminal_paste_text(Terminal *term);
+static void terminal_reset(Terminal *term);
 static void terminal_fullscreen(Terminal *term);
+static void terminal_menu_popup(Terminal *term);
 static void terminal_open_url(Terminal *term, char *url);
 static void terminal_child_exited_event(GtkWidget *vte, Terminal *term);
 static void terminal_eof_event(GtkWidget *vte, Terminal *term);
 static void terminal_window_title_changed_event(GtkWidget *vte, Terminal *term);
 static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget);
 static void terminal_new_window(Terminal *term);
-static void terminal_destroy_window(Terminal *term);
+static void terminal_destroy(Terminal *term);
 static Terminal *terminal_initialize(Config *conf, Options *opts);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
@@ -38,6 +43,8 @@ static char *terminal_get_cwd(Terminal *term);
 static void config_initialize(Config *conf);
 static Config *config_load_from_file(const char *user_file);
 static Options *options_parse(int argc, char *argv[]);
+
+#include "config.h"
 
 static void die(const char *errstr, ...)
 {
@@ -91,7 +98,8 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 		break;
 	case 3:
 		/* Right button: show popup menu */
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+		//gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+		terminal_menu_popup(term);
 		return TRUE;
 	default:
 		break;
@@ -102,70 +110,19 @@ static gboolean terminal_button_press_event(VteTerminal *vte, GdkEventButton *ev
 
 static gboolean terminal_key_press_event(GtkWidget *window, GdkEventKey *event, Terminal *term)
 {
-	if (event->type != GDK_KEY_PRESS) {
-		return FALSE;
-	}
+	int i;
+	gboolean processed = FALSE;
 
-	/* Check if Caps-Lock is enabled - change keyval
-	   to work with upper/lowercase. */
-	if (gdk_keymap_get_caps_lock_state(gdk_keymap_get_default())) {
-		event->keyval = gdk_keyval_to_upper(event->keyval);
-	}
-
-	/* Open new window: Ctrl+Shift+n */
-	if ((event->state & NEW_WINDOW_ACCEL) == NEW_WINDOW_ACCEL) {
-		if (event->keyval == NEW_WINDOW_KEY) {
-			terminal_new_window(term);
-			return TRUE;
+	for (i = 0; i < LENGTH(keys); i++) {
+		if (gdk_keyval_to_lower(event->keyval) == keys[i].keyval &&
+				CLEANMASK(event->state) == keys[i].mask &&
+				keys[i].func) {
+			keys[i].func(term);
+			processed = TRUE;
 		}
 	}
 
-	/* Copy text: Ctrl+Shift+c */
-	if ((event->state & COPY_ACCEL) == COPY_ACCEL) {
-		if (event->keyval == COPY_KEY) {
-			terminal_copy_text(term);
-			return TRUE;
-		}
-	}
-
-	/* Paste text: Ctrl+Shift+v */
-	if ((event->state & PASTE_ACCEL) == PASTE_ACCEL) {
-		if (event->keyval == PASTE_KEY) {
-			terminal_paste_text(term);
-			return TRUE;
-		}
-	}
-
-	/* Reset Terminal: Ctrl+Shift+r */
-	if ((event->state & RESET_ACCEL) == RESET_ACCEL) {
-		if (event->keyval == RESET_KEY) {
-			vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
-			return TRUE;
-		}
-	}
-
-	/* Close Window: Ctrl+Shift+q */
-	if ((event->state & CLOSE_WINDOW_ACCEL) == CLOSE_WINDOW_ACCEL) {
-		if (event->keyval == CLOSE_WINDOW_KEY) {
-			terminal_destroy_window(term);
-			return TRUE;
-		}
-	}
-
-	/* Keybindings without modifiers */
-	switch(event->keyval) {
-	case FULLSCREEN_KEY:
-		/* Toggle fullscreen */
-		terminal_fullscreen(term);
-		return TRUE;
-	case MENU_KEY:
-		/* Menu popup */
-		gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL,
-				NULL, NULL, event->keyval, event->time);
-		return TRUE;
-	}
-
-	return FALSE;
+	return processed;
 }
 
 static void terminal_copy_text(Terminal *term)
@@ -178,6 +135,11 @@ static void terminal_paste_text(Terminal *term)
 	vte_terminal_paste_clipboard(VTE_TERMINAL(term->vte));
 }
 
+static void terminal_reset(Terminal *term)
+{
+	vte_terminal_reset(VTE_TERMINAL(term->vte), TRUE, TRUE);
+}
+
 static void terminal_fullscreen(Terminal *term)
 {
 	if (term->fullscreen == FALSE) {
@@ -187,6 +149,11 @@ static void terminal_fullscreen(Terminal *term)
 		term->fullscreen = FALSE;
 		gtk_window_unfullscreen(GTK_WINDOW(term->window));
 	}
+}
+
+static void terminal_menu_popup(Terminal *term)
+{
+	gtk_menu_popup(GTK_MENU(term->menu), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
 }
 
 static void terminal_open_url(Terminal *term, char *url)
@@ -215,7 +182,7 @@ static void terminal_child_exited_event(GtkWidget *vte, Terminal *term)
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
-	terminal_destroy_window(term);
+	terminal_destroy(term);
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
@@ -230,7 +197,7 @@ static void terminal_eof_event(GtkWidget *vte, Terminal *term)
 	waitpid(term->pid, &status, WNOHANG);
 	/* TODO: check wait return */
 
-	terminal_destroy_window(term);
+	terminal_destroy(term);
 
 	/* Destroy if no windows left */
 	if (g_slist_length(terminals) == 0) {
@@ -272,7 +239,7 @@ static void terminal_new_window(Terminal *term)
 	g_free(geometry);
 }
 
-static void terminal_destroy_window(Terminal *term)
+static void terminal_destroy(Terminal *term)
 {
 	/* Remove terminal from list, destroy, and free */
 	terminals = g_slist_remove(terminals, term);
@@ -309,8 +276,12 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 	/* Set window title */
 	gtk_window_set_title(GTK_WINDOW(term->window), (opts->title) ? opts->title : "Axon");
 	
-	/* Set window icon */
+	/* Set window icon - if icon theme doesn't support thus icon,
+	 * then the default window icon will be used instead. */
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
+
+	/* Set window role so it can be restored by session managers */
+	gtk_window_set_role(GTK_WINDOW(term->window), "Axon");
 
 	/* Create horizontal box as the child of the toplevel window */
 	term->hbox = gtk_hbox_new(FALSE, 0);
@@ -372,7 +343,7 @@ static Terminal *terminal_initialize(Config *conf, Options *opts)
 	}
 
 	/* Connect signals */
-	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy_window), term);
+	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy), term);
 	g_signal_connect(G_OBJECT(term->window), "key-press-event", G_CALLBACK(terminal_key_press_event), term);
 	g_signal_connect_swapped(G_OBJECT(term->window), "composited-changed", G_CALLBACK(terminal_settings_apply), term);
 
@@ -923,7 +894,7 @@ static Options *options_parse(int argc, char *argv[])
 
 	/* Print version info and exit */
 	if (opts->version) {
-		printf("axon %s, 2014 David Luco <dluco11@gmail.com>\n", VERSION);
+		printf("axon %s\n", VERSION);
 		exit(EXIT_SUCCESS);
 	}
 
@@ -959,7 +930,7 @@ int main(int argc, char *argv[])
 	/* Initialize terminal instance */
 	terminal_initialize(conf, opts);
 
-	/* Run GTK main loop */
+	/* Run GTK+ main loop */
 	gtk_main();
 
 	return 0;

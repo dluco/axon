@@ -1,50 +1,13 @@
-#ifndef AXON_H
-#define AXON_H
+#ifndef _AXON_H_
+#define _AXON_H_
 
-#define URL_REGEX "((ftp|http)s?://|www\\.)[-a-zA-Z0-9.?$%&/=_~#.,:;+]*"
-#define WORD_CHARS "-A-Za-z0-9,./?%&#:_=+@~"
-#define DEFAULT_CONFIG_FILE "axonrc"
-#define CFG_GROUP "axon"
-#define DEFAULT_COLUMNS 80
-#define DEFAULT_ROWS 24
-#define DEFAULT_FONT "Monospace, 11"
-#define PALETTE_SIZE 16
-#define DEFAULT_COLOR_SCHEME "white-on-black"
-#define DEFAULT_OPACITY 100
-#define SCROLL_ON_OUTPUT FALSE
-#define SCROLL_ON_KEYSTROKE TRUE
-#define SCROLLBAR FALSE
-#define SCROLLBACK_LINES 1024
-#define ALLOW_BOLD TRUE
-#define HIGHLIGHT_URLS FALSE
-#define AUDIBLE_BELL FALSE
-#define VISIBLE_BELL FALSE
-#define BLINKING_CURSOR FALSE
-#define DEFAULT_CURSOR_TYPE VTE_CURSOR_SHAPE_BLOCK
-#define AUTOHIDE_MOUSE FALSE
+/* structs */
+typedef struct _Options Options;
+typedef struct _Config Config;
+typedef struct _Key Key;
+typedef struct _Terminal Terminal;
 
-enum
-{
-	TITLE_MODE_REPLACE,
-	TITLE_MODE_IGNORE
-};
-
-#define DEFAULT_TITLE_MODE TITLE_MODE_REPLACE
-
-#define NEW_WINDOW_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
-#define COPY_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
-#define PASTE_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
-#define CLOSE_WINDOW_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
-#define RESET_ACCEL (GDK_CONTROL_MASK | GDK_SHIFT_MASK)
-#define NEW_WINDOW_KEY GDK_KEY_N
-#define COPY_KEY GDK_KEY_C
-#define PASTE_KEY GDK_KEY_V
-#define CLOSE_WINDOW_KEY GDK_KEY_Q
-#define RESET_KEY GDK_KEY_R
-#define FULLSCREEN_KEY GDK_KEY_F11
-#define MENU_KEY GDK_KEY_Menu
-
-typedef struct _options {
+struct _Options {
 	char *work_dir;
 	char *command;
 	char **execute_args;
@@ -55,9 +18,9 @@ typedef struct _options {
 	gboolean execute;
 	gint login;
 	gboolean fullscreen;
-} Options;
+};
 
-typedef struct _config {
+struct _Config {
 	char *font;
 	char *palette;
 	int opacity;
@@ -74,10 +37,15 @@ typedef struct _config {
 	VteTerminalCursorShape cursor_type;
 	gboolean autohide_mouse;
 	char *word_chars;
-	gboolean modified;
-} Config;
+};
 
-typedef struct _terminal {
+struct _Key {
+	int mask;
+	int keyval;
+	void (*func)(Terminal *term);
+};
+
+struct _Terminal {
 	GtkWidget *window;
 	GtkWidget *menu;
 	GtkWidget *hbox;
@@ -87,7 +55,6 @@ typedef struct _terminal {
 	Options *opts; /* associated Options */
 	GPid pid;
 	gboolean fullscreen; /* fullscreen state */
-} Terminal;
+};
 
-
-#endif /* AXON_H */
+#endif /* _AXON_H_ */

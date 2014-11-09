@@ -4,6 +4,8 @@ axon
 # Ignore objects and archives
 *.[oa]
 
+*.swp
+
 # Ignore log files
 log*
 
