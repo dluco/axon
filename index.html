@@ -47,8 +47,22 @@
 	<li>Transparency (true or native)</li>
 	<li>Font</li>
 	<li>Toggle bold text</li>
-	<li>Autohide mouse when typing</li>
+	<li>Autohide mouse while typing</li>
 </ul>
+
+<p>
+	Axon will attempt to source a config file at runtime from the following locations (in order):
+</p>
+
+<ul>
+	<li><code>--config=FILE</code></li>
+	<li><code>$XDG_CONFIG_HOME/axon/axonrc</code></li>
+	<li><code>$HOME/.axonrc</code></li>
+</ul>
+
+<p>
+	Reasonable compiled-in default settings will be used if no config file is found. A documented example config file explaining the various settings and their values can be found at <code>/usr/share/doc/axon/axonrc</code>.
+</p>
 
 <p>
 	Available colorschemes are located in <code>/usr/share/axon/colorschemes/</code> by default.
