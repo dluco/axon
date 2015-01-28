@@ -17,3 +17,13 @@ Keybindings
 - Ctrl+Shift+R : Reset Terminal
 - Ctrl+Shift+Q : Close Window
 - Menu : Show Context Menu (Right-Click)
+
+Author
+------
+
+David Luco <dluco11@gmail.com>
+
+Credits
+-------
+
+Based on LXTerminal (lxde.org)
