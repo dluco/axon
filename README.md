@@ -21,7 +21,7 @@ Keybindings
 Author
 ------
 
-David Luco <dluco11@gmail.com>
+David Luco <<dluco11@gmail.com>>
 
 Credits
 -------
