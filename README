@@ -1,12 +1,32 @@
 Axon
 ====
 
-Lightweight terminal emulator
+Axon is a lightweight virtual terminal emulator built using GTK+-2.0 and the VTE terminal widget. It was designed to be as simple as possible while still providing the same functionality of other larger, more complex terminal emulators. Axon aims to be fast, simple, and light on resources.
+
+Features
+--------
+
+Nearly every aspect of Axon's behaviour is customizable. Customizable features include:
+- Url highlighting
+- Colorschemes
+- Transpareny (true or native)
+- Font
+- Toggle bold text
+- Autohide mouse while typing
+
+Axon will attempt to source a configuration file at runtime from the following locations (in order):
+- --config=FILE
+- $XDG_CONFIG_HOME/axon/axonrc
+- $HOME/.axonrc
+
+Reasonable compiled-in default settings will be used if no config file is found. A documented example config file explaining the various settings and their values can be found at /usr/share/doc/axon/axonrc
+
+Available colorschemes are located in /usr/share/axon/colorschemes/ by default.
 
 Dependencies
 ------------
 
-Axon depends only on vte-2.0 and GTK+-2.0.
+Axon requires VTE 2.0 and GTK+ 2.0 or above.
 
 Keybindings
 -----------
