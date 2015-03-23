@@ -38,6 +38,7 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts);
 static void terminal_vte_initialize(Terminal *term);
 static void terminal_menu_popup_initialize(Terminal *term);
 static void terminal_settings_apply(Terminal *term);
+static void terminal_set_geometry_hints(Terminal *term);
 static void terminal_set_palette(Terminal *term, char *palette_name);
 static void terminal_set_opacity(Terminal *term, int opacity);
 static void terminal_run(Terminal *term, Options *opts);
@@ -222,22 +223,13 @@ static void terminal_selection_changed_event(GtkWidget *vte, GtkWidget *widget)
 static void terminal_new_window(Terminal *term)
 {
 	Options n_opts;
-	char *geometry;
 
 	/* Initialize n_opts */
 	memset(&n_opts, 0, sizeof(n_opts));
 
 	n_opts.work_dir = terminal_get_cwd(term);
-	Terminal *n_term = terminal_initialize(term->parent, &n_opts);
+	terminal_initialize(term->parent, &n_opts);
 	g_free(n_opts.work_dir);
-	
-	/* Apply geometry */
-	//gtk_widget_realize(n_term->vte);
-	geometry = g_strdup_printf("%dx%d", DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
-	if (!gtk_window_parse_geometry(GTK_WINDOW(n_term->window), geometry)) {
-		print_err("failed to set terminal size\n");
-	}
-	g_free(geometry);
 }
 
 static void terminal_destroy(Terminal *term)
@@ -257,8 +249,6 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 	Terminal *term;
 	Config *conf;
 	GdkColormap *colormap;
-	GdkGeometry hints;
-	GtkBorder *border;
 	char *geometry;
 
 	/* Allocate and initialize new Terminal struct */
@@ -280,7 +270,7 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 	/* Set window title */
 	gtk_window_set_title(GTK_WINDOW(term->window), (opts->title) ? opts->title : "Axon");
 	
-	/* Set window icon - if icon theme doesn't support thus icon,
+	/* Set window icon - if icon theme doesn't support this icon,
 	 * then the default window icon will be used instead. */
 	gtk_window_set_icon_name(GTK_WINDOW(term->window), "xterm");
 
@@ -296,8 +286,10 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 	gtk_box_pack_start(GTK_BOX(term->hbox), term->vte, TRUE, TRUE, 0);
 
 	/* Create the scrollbar as a child of the horizontal box */
-	term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
-	gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
+	if (conf->show_scrollbar) {
+		term->scrollbar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(term->vte)));
+		gtk_box_pack_start(GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
+	}
 
 	/* Create popup menu */
 	terminal_menu_popup_initialize(term);
@@ -318,19 +310,7 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 	gtk_widget_show_all(term->hbox);
 
 	/* Set geometry hints */
-	gtk_widget_style_get(term->vte, "inner-border", &border, NULL);
-	hints.width_inc = vte_terminal_get_char_width(VTE_TERMINAL(term->vte));  
-	hints.height_inc = vte_terminal_get_char_height(VTE_TERMINAL(term->vte));
-	hints.base_width = border->right + 1;
-	hints.base_height = border->bottom + 1;
-	hints.min_width = hints.base_width + hints.width_inc * 4;
-	hints.min_height = hints.base_height + hints.height_inc * 2;
-	gtk_border_free(border);
-
-	gtk_window_set_geometry_hints(GTK_WINDOW(term->window),
-		term->vte,
-		&hints,
-		GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+	terminal_set_geometry_hints(term);
 
 	/* Apply geometry option, if set, otherwise set default size */
 	if (opts->geometry) {
@@ -343,8 +323,9 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 		g_free(geometry);
 	} else {
 		/* Set default window size */
-		vte_terminal_set_size(VTE_TERMINAL(term->vte), DEFAULT_COLUMNS - 1, DEFAULT_ROWS);
+		vte_terminal_set_size(VTE_TERMINAL(term->vte), DEFAULT_COLUMNS, DEFAULT_ROWS);
 	}
+
 
 	/* Connect signals */
 	g_signal_connect_swapped(G_OBJECT(term->window), "destroy", G_CALLBACK(terminal_destroy), term);
@@ -353,8 +334,10 @@ static Terminal *terminal_initialize(Axon *axon, Options *opts)
 
 	gtk_widget_show_all(term->window);
 
-	/* Show/hide the scrollbar */
-	(conf->show_scrollbar) ? gtk_widget_show(term->scrollbar) : gtk_widget_hide(term->scrollbar);
+	/* Adjust for scrollbar */
+	vte_terminal_set_size(VTE_TERMINAL(term->vte),
+			vte_terminal_get_column_count(VTE_TERMINAL(term->vte)) + (conf->show_scrollbar) ? 1: 0,
+			vte_terminal_get_row_count(VTE_TERMINAL(term->vte)));
 
 	return term;
 }
@@ -456,6 +439,29 @@ static void terminal_settings_apply(Terminal *term)
 	/* Set VTE colors and opacity */
 	terminal_set_palette(term, conf->palette);
 	terminal_set_opacity(term, conf->opacity);
+}
+
+static void terminal_set_geometry_hints(Terminal *term)
+{
+	GdkGeometry hints;
+	GtkBorder *border;
+
+	gtk_widget_style_get(term->vte, "inner-border", &border, NULL);
+
+	/* Set geometry hints */
+	hints.width_inc = vte_terminal_get_char_width(VTE_TERMINAL(term->vte));  
+	hints.height_inc = vte_terminal_get_char_height(VTE_TERMINAL(term->vte));
+	hints.base_width = border->right * 2;
+	hints.base_height = border->bottom * 2;
+	hints.min_width = hints.base_width + hints.width_inc * 4;
+	hints.min_height = hints.base_height + hints.height_inc * 2;
+
+	gtk_border_free(border);
+
+	gtk_window_set_geometry_hints(GTK_WINDOW(term->window),
+		term->vte,
+		&hints,
+		GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 }
 
 static void terminal_set_palette(Terminal *term, char *palette_name)
